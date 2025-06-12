@@ -1,0 +1,25 @@
+services:
+  products:
+    build: ./services/product
+    container_name: products_service
+    env_file:
+      - ./services/product/.env
+    environment:
+      - IS_DOCKERIZED=true
+    ports:
+      - "3002:3002"
+    depends_on:
+      - mongo
+    command: pnpm dev
+  mongo:
+    image: mongo:latest
+    container_name: products_db
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:
