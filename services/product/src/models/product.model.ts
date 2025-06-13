@@ -43,6 +43,7 @@ const productSchema = new Schema<IProduct>(
   },
   {
     timestamps: true,
+    versionKey: false,
     toJSON: {
       transform: function (_doc, ret) {
         ret.id = ret._id.toString();
