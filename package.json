@@ -2,5 +2,8 @@
   "name": "mo-it151",
   "version": "1.0.0",
   "description": "",
-  "packageManager": "pnpm@10.10.0"
+  "packageManager": "pnpm@10.10.0",
+  "scripts": {
+    "compose": "docker-compose -f docker-compose.yml up --build"
+  }
 }
