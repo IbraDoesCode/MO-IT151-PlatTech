@@ -8,6 +8,7 @@ dotenv.config();
 
 const seedProducts = async () => {
   await connectDB();
+  await Product.deleteMany();
 
   console.debug("ℹ️  Seeding database...");
 
