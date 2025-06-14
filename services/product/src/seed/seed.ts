@@ -1,10 +1,9 @@
-import dotenv from "dotenv";
 import mongoose from "mongoose";
-import { faker } from "@faker-js/faker";
 import Product from "../models/product.model";
+import dotenv from "dotenv";
 import { connectDB } from "../utils/mongo";
 
-dotenv.config();
+dotenv.config({ path: "../.env" });
 
 const seedProducts = async () => {
   await connectDB();
@@ -12,18 +11,26 @@ const seedProducts = async () => {
 
   console.debug("ℹ️  Seeding database...");
 
-  const products = Array.from({ length: 250 }).map(() => ({
-    name: faker.commerce.productName(),
-    brand: faker.company.name(),
-    description: faker.commerce.productDescription(),
-    category: faker.commerce.department(),
-    price: parseFloat(faker.commerce.price()),
-    rating: faker.number.float({ min: 0, max: 5, fractionDigits: 1 }),
-    image_url: faker.image.urlPicsumPhotos(),
+  // max no. of products available in dummyjson
+  const response = await fetch(
+    "https://dummyjson.com/products?limit=194&select=title,description,category,brand,price,rating,thumbnail"
+  );
+
+  const { products } = await response.json();
+  console.log(`ℹ️  fetched total of ${products.length} products`);
+
+  const mappedProducts = products.map((product: any) => ({
+    name: product.title,
+    brand: product.brand,
+    description: product.description,
+    category: product.category,
+    price: product.price,
+    rating: product.rating,
+    image_url: product.thumbnail,
   }));
 
-  await Product.insertMany(products);
-  console.log("🌱  Seeded products successfully.");
+  await Product.insertMany(mappedProducts);
+  console.log("🌱 Seeded products successfully.");
 
   mongoose.connection.close();
 };
