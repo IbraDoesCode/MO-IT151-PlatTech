@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import logger from "./logger";
 
 export const connectDB = async () => {
   const URI =
@@ -7,11 +8,11 @@ export const connectDB = async () => {
       : process.env.LOCAL_MONGO_URI;
 
   try {
-    console.info(`ℹ️  Establishing database connection to ${URI}`);
+    logger.info(`Establishing database connection to ${URI}`);
     await mongoose.connect(URI!);
-    console.info(`✅ Successfully connected to ${URI}`);
+    logger.info(`Successfully connected to ${URI}`);
   } catch (error) {
-    console.error(`❌ Error establishing database connection to ${URI}`);
+    logger.error(`Error establishing database connection to ${URI}`);
     process.exit(1);
   }
 };
