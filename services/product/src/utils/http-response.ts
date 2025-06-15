@@ -1,6 +1,6 @@
 import { Response } from "express";
 
-export class ApiResponse {
+export class HTTPResponse {
   static success<T>(
     res: Response,
     statusCode: number,
