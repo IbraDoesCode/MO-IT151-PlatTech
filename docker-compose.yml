@@ -10,6 +10,7 @@ services:
       - "3002:3002"
     depends_on:
       - mongo
+      - redis
     command: pnpm dev
   mongo:
     image: mongo:latest
@@ -20,6 +21,12 @@ services:
 
     volumes:
       - mongo-data:/data/db
+  redis:
+    image: redis:alpine
+    container_name: redis_cache
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
 
 volumes:
   mongo-data:
