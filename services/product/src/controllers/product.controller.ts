@@ -13,18 +13,13 @@ export const getProductById = async (req: Request, res: Response) => {
       logger.warn("Invalid id received", {
         id: id,
       });
-      HTTPResponse.error(res, 400, "Invalid Id");
+      HTTPResponse.badRequest(res, "Invalid Id");
       return;
     }
 
     const cached = await redis.get(`product:${id}`);
     if (cached) {
-      HTTPResponse.success(
-        res,
-        200,
-        "Product retrieved from cache",
-        JSON.parse(cached)
-      );
+      HTTPResponse.ok(res, "Product retrieved from cache", JSON.parse(cached));
       return;
     }
 
@@ -32,16 +27,16 @@ export const getProductById = async (req: Request, res: Response) => {
 
     if (!product) {
       logger.error(`Product not found for id: ${id}`);
-      HTTPResponse.error(res, 404, "Product not found", null);
+      HTTPResponse.notFound(res, "Product not found", null);
       return;
     }
 
     await redis.set(`product:${id}`, JSON.stringify(product), "EX", 3600);
 
-    HTTPResponse.success(res, 200, `Product successfully retrieved`, product);
+    HTTPResponse.ok(res, `Product successfully retrieved`, product);
   } catch (error) {
     logger.error("An unexpected error has occurred", error);
-    HTTPResponse.error(res, 500, "Internal server error");
+    HTTPResponse.internalServerError(res, "Internal server error", error);
   }
 };
 
@@ -53,25 +48,22 @@ export const getProductByName = async (req: Request, res: Response) => {
       logger.warn("Invalid product name received", {
         name: name,
       });
-      HTTPResponse.error(res, 400, "Empty or invalid product name.");
+      HTTPResponse.badRequest(res, "Empty or invalid product name.");
     }
 
-    const product = await Product.findOne({ name: name });
+    const product = await Product.find({
+      name: { $regex: name, $options: "i" },
+    });
 
     const cached = await redis.get(`product:name:${name}`);
     if (cached) {
-      HTTPResponse.success(
-        res,
-        200,
-        "Product retrieved from cache",
-        JSON.parse(cached)
-      );
+      HTTPResponse.ok(res, "Product retrieved from cache", JSON.parse(cached));
       return;
     }
 
     if (!product) {
       logger.error(`Product not found for name: ${name}`);
-      HTTPResponse.error(res, 404, "Product not found", null);
+      HTTPResponse.notFound(res, "Product not found");
       return;
     }
 
@@ -82,10 +74,10 @@ export const getProductByName = async (req: Request, res: Response) => {
       3600
     );
 
-    HTTPResponse.success(res, 200, `Product successfully retrieved`, product);
+    HTTPResponse.ok(res, `Product successfully retrieved`, product);
   } catch (error) {
     logger.error("An unexpected error has occurred", error);
-    HTTPResponse.error(res, 500, "Internal server error");
+    HTTPResponse.internalServerError(res, "Internal server error", error);
   }
 };
 
@@ -104,12 +96,7 @@ export const getProducts = async (req: Request, res: Response) => {
     const cached = await redis.get(cacheKey);
 
     if (cached) {
-      HTTPResponse.success(
-        res,
-        200,
-        `Products retrieved from cache`,
-        JSON.parse(cached)
-      );
+      HTTPResponse.ok(res, `Products retrieved from cache`, JSON.parse(cached));
       return;
     }
 
@@ -119,14 +106,14 @@ export const getProducts = async (req: Request, res: Response) => {
 
     if (!products) {
       logger.error(`Products not found`);
-      HTTPResponse.error(res, 404, "Products not found", null);
+      HTTPResponse.notFound(res, "Products not found", null);
       return;
     }
 
     const total = await Product.countDocuments(filters);
 
     if (!products.length) {
-      HTTPResponse.error(res, 404, "Products not found", null);
+      HTTPResponse.notFound(res, "Products not found", null);
       return;
     }
 
@@ -140,9 +127,9 @@ export const getProducts = async (req: Request, res: Response) => {
 
     await redis.set(cacheKey, JSON.stringify(result), "EX", 300);
 
-    HTTPResponse.success(res, 200, `Product successfully retrieved`, result);
+    HTTPResponse.ok(res, `Product successfully retrieved`, result);
   } catch (error) {
     logger.error("An unexpected error has occurred", error);
-    HTTPResponse.error(res, 500, "Internal server error");
+    HTTPResponse.internalServerError(res, "Internal server error", error);
   }
 };
