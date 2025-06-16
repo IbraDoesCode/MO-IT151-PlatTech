@@ -51,7 +51,9 @@ export const getProductByName = async (req: Request, res: Response) => {
       HTTPResponse.badRequest(res, "Empty or invalid product name.");
     }
 
-    const product = await Product.findOne({ name: name });
+    const product = await Product.find({
+      name: { $regex: name, $options: "i" },
+    });
 
     const cached = await redis.get(`product:name:${name}`);
     if (cached) {
