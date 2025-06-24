@@ -1,0 +1,10 @@
+import { Container } from "@mantine/core";
+import { createFileRoute } from "@tanstack/react-router";
+
+export const Route = createFileRoute("/(user)/_navbar/cart/")({
+  component: ProductsPage,
+});
+
+function ProductsPage() {
+  return <Container size="xl" className="pt-10"></Container>;
+}
