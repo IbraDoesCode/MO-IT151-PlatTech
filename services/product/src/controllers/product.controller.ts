@@ -160,3 +160,51 @@ export const getProducts = async (req: Request, res: Response) => {
     HTTPResponse.internalServerError(res, "Internal server error", error);
   }
 };
+
+export const createProduct = async (req: Request, res: Response) => {
+  try {
+    const { name, brand, description, category, price, rating, image_url } =
+      req.body;
+
+    if (!name || !brand || !description || !category || !price) {
+      HTTPResponse.badRequest(
+        res,
+        "Missing required field(s): name, brand, description, category, price."
+      );
+      return;
+    }
+
+    // Provide a placeholder image if image_url isn't present
+    let productImageUrl = image_url;
+
+    if (!Boolean(productImageUrl)) {
+      productImageUrl = "https://placehold.co/300/webp?text=Image%20Here";
+    }
+
+    // Create product entry
+    const newProduct = new Product({
+      name,
+      brand,
+      description,
+      category,
+      price,
+      rating,
+      image_url: productImageUrl,
+    });
+
+    const savedProduct = await newProduct.save();
+
+    // Cache by ID lookup
+    await redis.set(
+      `product:${savedProduct._id}`,
+      JSON.stringify(savedProduct),
+      "EX",
+      300
+    );
+
+    HTTPResponse.ok(res, "Product successfully created.", savedProduct);
+  } catch (error) {
+    logger.error("An unexpected error has occurred", error);
+    HTTPResponse.internalServerError(res, "Internal server error", error);
+  }
+};
