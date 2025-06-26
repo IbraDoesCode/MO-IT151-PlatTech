@@ -1,0 +1,18 @@
+services:
+  mongo:
+    image: mongo:latest
+    restart: always
+    env_file:
+      - ./.env
+    volumes:
+      - ./database/mongodb-data:/data/db
+      - ./database/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    ports:
+      - "27017:27017"
+
+  redis:
+    image: redis:alpine
+    container_name: redis_cache
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
