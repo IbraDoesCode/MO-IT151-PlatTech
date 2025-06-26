@@ -4,6 +4,12 @@ import Product from "../models/product.model";
 import mongoose from "mongoose";
 import redis from "../utils/redis";
 import logger from "../utils/logger";
+import {
+  ACTIVE_PRODUCT_LISTING_KEYS_SET,
+  invalidateProductCache,
+  PRODUCT_BY_ID_PREFIX,
+  PRODUCT_QUERY_PREFIX,
+} from "../utils/cache";
 
 export const getProductById = async (req: Request, res: Response) => {
   try {
@@ -17,7 +23,9 @@ export const getProductById = async (req: Request, res: Response) => {
       return;
     }
 
-    const cached = await redis.get(`product:${id}`);
+    const cacheKey = `${PRODUCT_BY_ID_PREFIX}${id}`;
+    const cached = await redis.get(cacheKey);
+
     if (cached) {
       HTTPResponse.ok(res, "Product retrieved from cache", JSON.parse(cached));
       return;
@@ -31,50 +39,10 @@ export const getProductById = async (req: Request, res: Response) => {
       return;
     }
 
-    await redis.set(`product:${id}`, JSON.stringify(product), "EX", 3600);
+    // Cache for 5 mins
+    await redis.set(cacheKey, JSON.stringify(product), "EX", 300);
 
-    HTTPResponse.ok(res, `Product successfully retrieved`, product);
-  } catch (error) {
-    logger.error("An unexpected error has occurred", error);
-    HTTPResponse.internalServerError(res, "Internal server error", error);
-  }
-};
-
-export const getProductByName = async (req: Request, res: Response) => {
-  try {
-    const { name } = req.params;
-
-    if (!name) {
-      logger.warn("Invalid product name received", {
-        name: name,
-      });
-      HTTPResponse.badRequest(res, "Empty or invalid product name.");
-    }
-
-    const product = await Product.find({
-      name: { $regex: name, $options: "i" },
-    });
-
-    const cached = await redis.get(`product:name:${name}`);
-    if (cached) {
-      HTTPResponse.ok(res, "Product retrieved from cache", JSON.parse(cached));
-      return;
-    }
-
-    if (!product) {
-      logger.error(`Product not found for name: ${name}`);
-      HTTPResponse.notFound(res, "Product not found");
-      return;
-    }
-
-    await redis.set(
-      `product:name:${name}`,
-      JSON.stringify(product),
-      "EX",
-      3600
-    );
-
-    HTTPResponse.ok(res, `Product successfully retrieved`, product);
+    HTTPResponse.ok(res, "Product successfully retrieved", product);
   } catch (error) {
     logger.error("An unexpected error has occurred", error);
     HTTPResponse.internalServerError(res, "Internal server error", error);
@@ -87,10 +55,8 @@ export const getProducts = async (req: Request, res: Response) => {
     const limit = parseInt(req.query.limit as string) || 10;
     const filters: Record<string, any> = {};
 
-    // To dynamically query for a specific property
     const { name, brand, category, price, rating } = req.query;
 
-    // Dynamically build the query object
     if (name) filters.name = { $regex: name, $options: "i" };
     if (brand) filters.brand = { $regex: brand, $options: "i" };
     if (category) filters.category = category;
@@ -98,50 +64,29 @@ export const getProducts = async (req: Request, res: Response) => {
     if (rating)
       filters.rating = { $gte: Number(rating), $lt: Number(rating) + 1 };
 
-    // Create the cache key for dynamic consumption
-    const cacheKey = `products:${JSON.stringify(
+    // Create a consistent and unique cache key for dynamic consumption
+    const cacheKey = `${PRODUCT_QUERY_PREFIX}${JSON.stringify(
       filters
     )}:page:${page}:limit:${limit}`;
 
-    // First check if the product being fetched is cached
     const cached = await redis.get(cacheKey);
 
-    // Return the cached value if there are any
     if (cached) {
-      HTTPResponse.ok(res, `Products retrieved from cache`, JSON.parse(cached));
+      HTTPResponse.ok(res, "Products retrieved from cache", JSON.parse(cached));
       return;
     }
 
-    // If there are no cached products, try to find it in mongodb
     const products = await Product.find(filters)
       .limit(limit * 1)
       .skip((page - 1) * limit);
 
-    // Return this error message if there are filters
-    if (!Boolean(products.length) && Object.keys(filters).length > 0) {
-      logger.error(`No products matched the given filters.`);
-      HTTPResponse.notFound(
-        res,
-        "No products matched the given filters.",
-        null
-      );
-      return;
-    }
-
-    // Return this error if there are NO filters
     if (!Boolean(products.length)) {
-      logger.error(`Products not found`);
-      HTTPResponse.notFound(res, "Products not found", null);
+      logger.error("No products found matching the criteria.");
+      HTTPResponse.notFound(res, "No products found.", null);
       return;
     }
 
     const total = await Product.countDocuments(filters);
-
-    // NOTE: I don't think this check is necessary
-    if (!Boolean(products.length)) {
-      HTTPResponse.notFound(res, "Products not found", null);
-      return;
-    }
 
     const result = {
       products,
@@ -151,10 +96,13 @@ export const getProducts = async (req: Request, res: Response) => {
       totalPages: Math.ceil(total / limit),
     };
 
-    // Set cache after a successful query of the products
+    // Cache for 5 minutes (300 seconds)
     await redis.set(cacheKey, JSON.stringify(result), "EX", 300);
+    // Add this specific query cache key to our master set for easy invalidation
+    await redis.sadd(ACTIVE_PRODUCT_LISTING_KEYS_SET, cacheKey);
+    logger.info(`Added ${cacheKey} to ${ACTIVE_PRODUCT_LISTING_KEYS_SET}`);
 
-    HTTPResponse.ok(res, `Product successfully retrieved`, result);
+    HTTPResponse.ok(res, "Product successfully retrieved", result);
   } catch (error) {
     logger.error("An unexpected error has occurred", error);
     HTTPResponse.internalServerError(res, "Internal server error", error);
@@ -174,14 +122,11 @@ export const createProduct = async (req: Request, res: Response) => {
       return;
     }
 
-    // Provide a placeholder image if image_url isn't present
     let productImageUrl = image_url;
-
     if (!Boolean(productImageUrl)) {
       productImageUrl = "https://placehold.co/300/webp?text=Image%20Here";
     }
 
-    // Create product entry
     const newProduct = new Product({
       name,
       brand,
@@ -194,15 +139,62 @@ export const createProduct = async (req: Request, res: Response) => {
 
     const savedProduct = await newProduct.save();
 
-    // Cache by ID lookup
+    // Cache the newly created product by ID (for direct lookup)
     await redis.set(
-      `product:${savedProduct._id}`,
+      `${PRODUCT_BY_ID_PREFIX}${savedProduct._id}`,
       JSON.stringify(savedProduct),
       "EX",
       300
     );
 
+    // Invalidate all related caches after a new product is created
+    await invalidateProductCache(savedProduct._id.toString());
+
     HTTPResponse.ok(res, "Product successfully created.", savedProduct);
+  } catch (error) {
+    logger.error("An unexpected error has occurred", error);
+    HTTPResponse.internalServerError(res, "Internal server error", error);
+  }
+};
+
+export const updateProduct = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      HTTPResponse.badRequest(res, "Invalid product ID.");
+      return;
+    }
+
+    const updateFields = req.body;
+
+    if (Object.keys(updateFields).length == 0) {
+      HTTPResponse.badRequest(res, "No fields provided to update.");
+      return;
+    }
+
+    const updatedProduct = await Product.findByIdAndUpdate(id, updateFields, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!updatedProduct) {
+      HTTPResponse.notFound(res, "Product not found.");
+      return;
+    }
+
+    // Cache the updated product by ID (for direct lookup)
+    await redis.set(
+      `${PRODUCT_BY_ID_PREFIX}${updatedProduct._id}`,
+      JSON.stringify(updatedProduct),
+      "EX",
+      300
+    );
+
+    // Invalidate all related caches after a product is updated
+    await invalidateProductCache(updatedProduct._id.toString());
+
+    HTTPResponse.ok(res, "Product successfully updated.", updatedProduct);
   } catch (error) {
     logger.error("An unexpected error has occurred", error);
     HTTPResponse.internalServerError(res, "Internal server error", error);
