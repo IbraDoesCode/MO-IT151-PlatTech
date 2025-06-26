@@ -5,6 +5,7 @@ export const PRODUCT_BY_ID_PREFIX = "product:id:";
 export const PRODUCT_QUERY_PREFIX = "products:query:";
 // This SET will hold all the keys generated for product listings
 export const ACTIVE_PRODUCT_LISTING_KEYS_SET = "active_product_listing_keys";
+export const TIME_TO_LIVE = 300
 
 /**
  * Invalidates product-related caches in Redis.

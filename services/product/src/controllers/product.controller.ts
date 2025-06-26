@@ -9,6 +9,7 @@ import {
   invalidateProductCache,
   PRODUCT_BY_ID_PREFIX,
   PRODUCT_QUERY_PREFIX,
+  TIME_TO_LIVE,
 } from "../utils/cache";
 
 export const getProductById = async (req: Request, res: Response) => {
@@ -40,7 +41,7 @@ export const getProductById = async (req: Request, res: Response) => {
     }
 
     // Cache for 5 mins
-    await redis.set(cacheKey, JSON.stringify(product), "EX", 300);
+    await redis.set(cacheKey, JSON.stringify(product), "EX", TIME_TO_LIVE);
 
     HTTPResponse.ok(res, "Product successfully retrieved", product);
   } catch (error) {
@@ -97,7 +98,7 @@ export const getProducts = async (req: Request, res: Response) => {
     };
 
     // Cache for 5 minutes (300 seconds)
-    await redis.set(cacheKey, JSON.stringify(result), "EX", 300);
+    await redis.set(cacheKey, JSON.stringify(result), "EX", TIME_TO_LIVE);
     // Add this specific query cache key to our master set for easy invalidation
     await redis.sadd(ACTIVE_PRODUCT_LISTING_KEYS_SET, cacheKey);
     logger.info(`Added ${cacheKey} to ${ACTIVE_PRODUCT_LISTING_KEYS_SET}`);
@@ -144,7 +145,7 @@ export const createProduct = async (req: Request, res: Response) => {
       `${PRODUCT_BY_ID_PREFIX}${savedProduct._id}`,
       JSON.stringify(savedProduct),
       "EX",
-      300
+      TIME_TO_LIVE
     );
 
     // Invalidate all related caches after a new product is created
@@ -188,13 +189,39 @@ export const updateProduct = async (req: Request, res: Response) => {
       `${PRODUCT_BY_ID_PREFIX}${updatedProduct._id}`,
       JSON.stringify(updatedProduct),
       "EX",
-      300
+      TIME_TO_LIVE
     );
 
     // Invalidate all related caches after a product is updated
     await invalidateProductCache(updatedProduct._id.toString());
 
     HTTPResponse.ok(res, "Product successfully updated.", updatedProduct);
+  } catch (error) {
+    logger.error("An unexpected error has occurred", error);
+    HTTPResponse.internalServerError(res, "Internal server error", error);
+  }
+};
+
+export const deleteProduct = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      HTTPResponse.badRequest(res, "Invalid Product ID.");
+      return;
+    }
+
+    const deletedProduct = await Product.findByIdAndDelete(id);
+
+    if (!deletedProduct) {
+      HTTPResponse.notFound(res, "Product not found.");
+      return;
+    }
+
+    // Invalidate all related caches of this product
+    await invalidateProductCache(id);
+
+    HTTPResponse.ok(res, `Product deleted successfully: ${id}`, null);
   } catch (error) {
     logger.error("An unexpected error has occurred", error);
     HTTPResponse.internalServerError(res, "Internal server error", error);

@@ -4,6 +4,7 @@ import {
   getProductById,
   createProduct,
   updateProduct,
+  deleteProduct,
 } from "../controllers/product.controller";
 
 const router = Router();
@@ -12,9 +13,12 @@ const router = Router();
 router.get("/", getProducts);
 router.get("/:id", getProductById);
 
-// Post routes
+// Post route
 router.post("/", createProduct);
 
-// Patch routes
+// Patch route
 router.patch("/:id", updateProduct);
+
+// Delete route
+router.delete("/:id", deleteProduct);
 export default router;
