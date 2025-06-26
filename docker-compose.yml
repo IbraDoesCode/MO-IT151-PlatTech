@@ -12,21 +12,20 @@ services:
       - mongo
       - redis
     command: pnpm dev
+
   mongo:
     image: mongo:latest
     container_name: products_db
     restart: unless-stopped
     ports:
       - "27017:27017"
-
     volumes:
-      - mongo-data:/data/db
+      - ./database/mongodb-data:/data/db
+      - ./database/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+
   redis:
     image: redis:alpine
     container_name: redis_cache
     ports:
       - "6379:6379"
     restart: unless-stopped
-
-volumes:
-  mongo-data:
