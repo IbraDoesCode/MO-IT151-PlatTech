@@ -3,7 +3,7 @@ import Product from "../models/product.model";
 import dotenv from "dotenv";
 import { connectDB } from "../utils/mongo";
 
-dotenv.config({ path: "../.env" });
+dotenv.config({ path: "./.env" });
 
 const seedProducts = async () => {
   await connectDB();
