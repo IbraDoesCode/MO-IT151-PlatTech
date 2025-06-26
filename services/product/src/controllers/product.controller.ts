@@ -87,24 +87,49 @@ export const getProducts = async (req: Request, res: Response) => {
     const limit = parseInt(req.query.limit as string) || 10;
     const filters: Record<string, any> = {};
 
-    if (req.query.brand) filters.brand = req.query.brand;
-    if (req.query.category) filters.category = req.query.category;
+    // To dynamically query for a specific property
+    const { name, brand, category, price, rating } = req.query;
 
+    // Dynamically build the query object
+    if (name) filters.name = { $regex: name, $options: "i" };
+    if (brand) filters.brand = { $regex: brand, $options: "i" };
+    if (category) filters.category = category;
+    if (price) filters.price = Number(price);
+    if (rating)
+      filters.rating = { $gte: Number(rating), $lt: Number(rating) + 1 };
+
+    // Create the cache key for dynamic consumption
     const cacheKey = `products:${JSON.stringify(
       filters
     )}:page:${page}:limit:${limit}`;
+
+    // First check if the product being fetched is cached
     const cached = await redis.get(cacheKey);
 
+    // Return the cached value if there are any
     if (cached) {
       HTTPResponse.ok(res, `Products retrieved from cache`, JSON.parse(cached));
       return;
     }
 
+    // If there are no cached products, try to find it in mongodb
     const products = await Product.find(filters)
       .limit(limit * 1)
       .skip((page - 1) * limit);
 
-    if (!products) {
+    // Return this error message if there are filters
+    if (!Boolean(products.length) && Object.keys(filters).length > 0) {
+      logger.error(`No products matched the given filters.`);
+      HTTPResponse.notFound(
+        res,
+        "No products matched the given filters.",
+        null
+      );
+      return;
+    }
+
+    // Return this error if there are NO filters
+    if (!Boolean(products.length)) {
       logger.error(`Products not found`);
       HTTPResponse.notFound(res, "Products not found", null);
       return;
@@ -112,7 +137,8 @@ export const getProducts = async (req: Request, res: Response) => {
 
     const total = await Product.countDocuments(filters);
 
-    if (!products.length) {
+    // NOTE: I don't think this check is necessary
+    if (!Boolean(products.length)) {
       HTTPResponse.notFound(res, "Products not found", null);
       return;
     }
@@ -125,6 +151,7 @@ export const getProducts = async (req: Request, res: Response) => {
       totalPages: Math.ceil(total / limit),
     };
 
+    // Set cache after a successful query of the products
     await redis.set(cacheKey, JSON.stringify(result), "EX", 300);
 
     HTTPResponse.ok(res, `Product successfully retrieved`, result);
