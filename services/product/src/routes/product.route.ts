@@ -2,8 +2,8 @@ import { Router } from "express";
 import {
   getProducts,
   getProductById,
-  getProductByName,
   createProduct,
+  updateProduct,
 } from "../controllers/product.controller";
 
 const router = Router();
@@ -11,8 +11,10 @@ const router = Router();
 // Get routes
 router.get("/", getProducts);
 router.get("/:id", getProductById);
-router.get("/by-name/:name", getProductByName);
 
 // Post routes
 router.post("/", createProduct);
+
+// Patch routes
+router.patch("/:id", updateProduct);
 export default router;
