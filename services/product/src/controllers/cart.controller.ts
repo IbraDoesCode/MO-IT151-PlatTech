@@ -10,6 +10,15 @@ import mongoose from "mongoose";
 // valid cart id:
 // 685de053a523cbafa6fe847d
 
+/**
+ * Create a new cart.
+ *
+ * @route POST /cart
+ * @param req.body.userId (string, optional) - User's ObjectId
+ * @returns 200 with created cart, 400 if invalid userId
+ *
+ * Creates a new cart document, optionally associated with a user.
+ */
 export const createCart = async (req: Request, res: Response) => {
   try {
     const { userId } = req.body || {};
@@ -36,6 +45,15 @@ export const createCart = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Get a cart by its ObjectId.
+ *
+ * @route GET /cart/:cartId
+ * @param req.params.cartId - The cart's ObjectId (string)
+ * @returns 200 with cart, 400 if invalid id, 404 if not found
+ *
+ * Populates product details in cart items.
+ */
 export const getCartById = async (req: Request, res: Response) => {
   try {
     const { cartId } = req.params;
@@ -59,6 +77,16 @@ export const getCartById = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Update the items in a cart.
+ *
+ * @route PUT /cart/:cartId
+ * @param req.params.cartId - The cart's ObjectId (string)
+ * @param req.body.items - Array of cart items to set
+ * @returns 200 with updated cart, 400 if invalid id, 404 if not found
+ *
+ * Replaces the cart's items array with the provided items.
+ */
 export const updateCart = async (req: Request, res: Response) => {
   try {
     const { cartId } = req.params;
@@ -92,6 +120,13 @@ export const updateCart = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Delete a cart by its ObjectId.
+ *
+ * @route DELETE /cart/:cartId
+ * @param req.params.cartId - The cart's ObjectId (string)
+ * @returns 200 if deleted, 400 if invalid id, 404 if not found
+ */
 export const deleteCart = async (req: Request, res: Response) => {
   try {
     const { cartId } = req.params;
@@ -115,6 +150,17 @@ export const deleteCart = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Add or update a cart item (upsert).
+ *
+ * @route PUT /cart/:cartId/item
+ * @param req.params.cartId - The cart's ObjectId (string)
+ * @param req.body.productId - The product's ObjectId (string)
+ * @param req.body.quantity - The quantity to set (number)
+ * @returns 200 with updated cart, 400 if invalid ids, 404 if not found
+ *
+ * If quantity is 0, removes the item. If item exists, updates quantity. Otherwise, adds new item.
+ */
 export const upsertCartItem = async (req: Request, res: Response) => {
   try {
     const { cartId } = req.params;
@@ -194,6 +240,14 @@ export const upsertCartItem = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Remove a specific item from the cart.
+ *
+ * @route DELETE /cart/:cartId/items
+ * @param req.params.cartId - The cart's ObjectId (string)
+ * @param req.body.productId - The product's ObjectId (string)
+ * @returns 200 with updated cart, 400 if invalid ids, 404 if not found
+ */
 export const removeCartItem = async (req: Request, res: Response) => {
   try {
     const { cartId } = req.params;
