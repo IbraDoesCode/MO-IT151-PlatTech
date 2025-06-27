@@ -12,6 +12,9 @@ import {
   TIME_TO_LIVE,
 } from "../utils/cache";
 import { resolveBrand, resolveCategory } from "../utils/resolveRefs";
+import Brand from "../models/brand.model";
+import Category from "../models/category.model";
+import { productsFilters } from "../utils/query";
 
 export const getProductById = async (req: Request, res: Response) => {
   try {
@@ -55,16 +58,7 @@ export const getProducts = async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
-    const filters: Record<string, any> = {};
-
-    const { name, brand, category, price, rating } = req.query;
-
-    if (name) filters.name = { $regex: name, $options: "i" };
-    if (brand) filters.brand = { $regex: brand, $options: "i" };
-    if (category) filters.category = category;
-    if (price) filters.price = Number(price);
-    if (rating)
-      filters.rating = { $gte: Number(rating), $lt: Number(rating) + 1 };
+    const filters = await productsFilters(req.query);
 
     // Create a consistent and unique cache key for dynamic consumption
     const cacheKey = `${PRODUCT_QUERY_PREFIX}${JSON.stringify(
