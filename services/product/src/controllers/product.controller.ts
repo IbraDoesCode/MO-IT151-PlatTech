@@ -184,7 +184,7 @@ export const updateProduct = async (req: Request, res: Response) => {
 
     // Resolve to object ids
     const brandId = (await resolveBrand(brand))._id;
-    const categoryId = (await resolveCategory(brand))._id;
+    const categoryId = (await resolveCategory(category))._id;
 
     const updatedProduct = await Product.findByIdAndUpdate(
       id,
