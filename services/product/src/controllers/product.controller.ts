@@ -105,6 +105,64 @@ export const getProducts = async (req: Request, res: Response) => {
   }
 };
 
+export const getProductCategories = async (req: Request, res: Response) => {
+  try {
+    const categories = await Category.find();
+
+    if (!Boolean(categories)) {
+      HTTPResponse.notFound(res, "No categories found.", categories);
+      return;
+    }
+
+    const cacheKey = `${PRODUCT_QUERY_PREFIX}categories`;
+    const cached = await redis.get(cacheKey);
+
+    if (cached) {
+      HTTPResponse.ok(res, "Products retrieved from cache", JSON.parse(cached));
+      return;
+    }
+
+    // Cache for 5 minutes (300 seconds)
+    await redis.set(cacheKey, JSON.stringify(categories), "EX", TIME_TO_LIVE);
+    // Add this specific query cache key to our master set for easy invalidation
+    await redis.sadd(ACTIVE_PRODUCT_LISTING_KEYS_SET, cacheKey);
+
+    HTTPResponse.ok(res, "Successfully fetched all categories.", categories);
+  } catch (error) {
+    logger.error("Failed to fetch categories.", { error });
+    HTTPResponse.internalServerError(res, "Could not fetch categories.");
+  }
+};
+
+export const getProductBrands = async (req: Request, res: Response) => {
+  try {
+    const brands = await Brand.find();
+
+    if (!Boolean(brands)) {
+      HTTPResponse.notFound(res, "No brands found.", brands);
+      return;
+    }
+
+    const cacheKey = `${PRODUCT_QUERY_PREFIX}brands`;
+    const cached = await redis.get(cacheKey);
+
+    if (cached) {
+      HTTPResponse.ok(res, "Products retrieved from cache", JSON.parse(cached));
+      return;
+    }
+
+    // Cache for 5 minutes (300 seconds)
+    await redis.set(cacheKey, JSON.stringify(brands), "EX", TIME_TO_LIVE);
+    // Add this specific query cache key to our master set for easy invalidation
+    await redis.sadd(ACTIVE_PRODUCT_LISTING_KEYS_SET, cacheKey);
+
+    HTTPResponse.ok(res, "Successfully fetched all brands.", brands);
+  } catch (error) {
+    logger.error("Failed to fetch brands.", { error });
+    HTTPResponse.internalServerError(res, "Could not fetch brands.");
+  }
+};
+
 export const createProduct = async (req: Request, res: Response) => {
   try {
     const { name, brand, description, category, price, rating, image_url } =

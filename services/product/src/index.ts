@@ -7,7 +7,6 @@ import httpLogger from "./middleware/httpLogger";
 import rateLimiter from "./middleware/rateLimitter";
 import cartRoute from "./routes/cart.route";
 import cartItemRoute from "./routes/cartItem.routes";
-import categoryRoute from "./routes/category.route";
 
 dotenv.config();
 
@@ -18,7 +17,6 @@ app.use(express.json());
 app.use(httpLogger);
 app.use(rateLimiter);
 
-app.use("/product/category", categoryRoute);
 app.use("/product", productRoute);
 app.use("/cart", cartRoute);
 app.use("/cart", cartItemRoute);

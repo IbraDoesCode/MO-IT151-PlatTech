@@ -5,12 +5,16 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
+  getProductCategories,
+  getProductBrands,
 } from "../controllers/product.controller";
 
 const router = Router();
 
 // Get routes
 router.get("/", getProducts);
+router.get("/category", getProductCategories);
+router.get("/brands", getProductBrands);
 router.get("/:id", getProductById);
 
 // Post route
