@@ -1,8 +1,17 @@
 import Brand from "../models/brand.model";
 import Category from "../models/category.model";
+import { IProduct } from "../models/product.model";
 import { resolveValueToObjectId } from "./resolveRefs";
 
-export const productsFilters = async (query: any) => {
+export interface IProductsFilter
+  extends Omit<IProduct, "description" | "image_url" | "brand" | "category"> {
+  brand: string;
+  category: string;
+  minPrice: string;
+  maxPrice: string;
+}
+
+export const productsFilters = async (query: Partial<IProductsFilter>) => {
   const filters: Record<string, any> = {};
 
   if (query.name) filters.name = { $regex: query.name, $options: "i" };
@@ -14,7 +23,11 @@ export const productsFilters = async (query: any) => {
       "name",
       query.category
     );
-  if (query.price) filters.price = Number(query.price);
+  if (query.minPrice && query.maxPrice) {
+    const minPrice = Number(query.minPrice);
+    const maxPrice = Number(query.maxPrice);
+    filters.price = { $gte: minPrice, $lte: maxPrice };
+  }
   if (query.rating) {
     const rating = Number(query.rating);
     filters.rating = { $gte: rating, $lt: rating + 1 };

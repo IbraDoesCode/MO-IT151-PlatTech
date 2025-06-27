@@ -3,7 +3,7 @@ import mongoose, { Schema, model } from "mongoose";
 import "../models/brand.model";
 import "../models/category.model";
 
-interface IProduct {
+export interface IProduct {
   name: string;
   brand: mongoose.Types.ObjectId;
   description: string;
