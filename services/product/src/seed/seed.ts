@@ -9,10 +9,12 @@ import Category from "../models/category.model";
 dotenv.config({ path: "./.env" });
 
 const seedProducts = async () => {
-  await connectDB();
-  await Product.deleteMany();
-  await Brand.deleteMany();
-  await Category.deleteMany();
+  await Promise.all([
+    connectDB(),
+    Product.deleteMany(),
+    Brand.deleteMany(),
+    Category.deleteMany(),
+  ]);
 
   console.debug("ℹ️  Seeding database...");
 
