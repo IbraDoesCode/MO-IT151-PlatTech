@@ -3,12 +3,16 @@ import Product from "../models/product.model";
 import dotenv from "dotenv";
 import { connectDB } from "../utils/mongo";
 import { resolveBrand, resolveCategory } from "../utils/resolveRefs";
+import Brand from "../models/brand.model";
+import Category from "../models/category.model";
 
 dotenv.config({ path: "./.env" });
 
 const seedProducts = async () => {
   await connectDB();
   await Product.deleteMany();
+  await Brand.deleteMany();
+  await Category.deleteMany();
 
   console.debug("ℹ️  Seeding database...");
 
