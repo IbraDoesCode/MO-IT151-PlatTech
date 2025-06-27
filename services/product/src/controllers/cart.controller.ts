@@ -85,3 +85,26 @@ export const updateCart = async (req: Request, res: Response) => {
     HTTPResponse.internalServerError(res, "Could not update cart");
   }
 };
+
+export const deleteCart = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      HTTPResponse.badRequest(res, "Invalid Cart ID.");
+      return;
+    }
+
+    const deletedCart = await Cart.findByIdAndDelete(id);
+
+    if (!deletedCart) {
+      HTTPResponse.notFound(res, "Cart not found.");
+      return;
+    }
+
+    HTTPResponse.ok(res, "Cart deleted", id);
+  } catch (error) {
+    logger.error("Failed to delete cart", { error });
+    HTTPResponse.internalServerError(res, "Could not delete cart") 
+  }
+}
