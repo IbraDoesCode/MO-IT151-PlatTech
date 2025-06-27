@@ -19,7 +19,7 @@ import { productsFilters } from "../utils/query";
 /**
  * Fetch a single product by its MongoDB ObjectId.
  *
- * @route GET /products/:id
+ * @route GET /product/:id
  * @param req.params.id - The product's ObjectId (string)
  * @returns 200 with product data, 400 if invalid id, 404 if not found
  *
@@ -128,7 +128,7 @@ export const getProducts = async (req: Request, res: Response) => {
 /**
  * Fetch all product categories.
  *
- * @route GET /products/categories
+ * @route GET /product/categories
  * @returns 200 with categories, 404 if none found
  *
  * Caches result for 5 minutes.
@@ -165,7 +165,7 @@ export const getProductCategories = async (req: Request, res: Response) => {
 /**
  * Fetch all product brands.
  *
- * @route GET /products/brands
+ * @route GET /product/brands
  * @returns 200 with brands, 404 if none found
  *
  * Caches result for 5 minutes.
@@ -271,7 +271,7 @@ export const createProduct = async (req: Request, res: Response) => {
 /**
  * Update an existing product.
  *
- * @route PUT /products/:id
+ * @route PUT /product/:id
  * @param req.params.id - The product's ObjectId
  * @param req.body - Fields to update (brand and category as names/slugs)
  * @returns 200 with updated product, 400 if invalid, 404 if not found
@@ -340,7 +340,7 @@ export const updateProduct = async (req: Request, res: Response) => {
 /**
  * Delete a product by its ObjectId.
  * 
- * @route DELETE /products/:id
+ * @route DELETE /product/:id
  * @param req.params.id - The product's ObjectId
  * @returns 200 if deleted, 400 if invalid, 404 if not found
  * 
