@@ -72,7 +72,7 @@ export const updateCart = async (req: Request, res: Response) => {
         new: true,
         runValidators: true,
       }
-    );
+    ).populate("items.product");
 
     if (!updatedCart) {
       HTTPResponse.notFound(res, "Cart not found.");
