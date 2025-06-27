@@ -16,6 +16,15 @@ import Brand from "../models/brand.model";
 import Category from "../models/category.model";
 import { productsFilters } from "../utils/query";
 
+/**
+ * Fetch a single product by its MongoDB ObjectId.
+ *
+ * @route GET /products/:id
+ * @param req.params.id - The product's ObjectId (string)
+ * @returns 200 with product data, 400 if invalid id, 404 if not found
+ *
+ * Caches result for 5 minutes.
+ */
 export const getProductById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -54,6 +63,17 @@ export const getProductById = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Fetch a paginated list of products, optionally filtered by query parameters.
+ *
+ * @route GET /products
+ * @param req.query.page (optional, default: 1) - Page number
+ * @param req.query.limit (optional, default: 10) - Items per page
+ * @param req.query.name, req.query.brand, req.query.category, req.query.minPrice, req.query.maxPrice, req.query.rating (optional) - Filtering fields
+ * @returns 200 with products and pagination info, 404 if none found
+ *
+ * Caches result for 5 minutes.
+ */
 export const getProducts = async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
@@ -105,6 +125,14 @@ export const getProducts = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Fetch all product categories.
+ *
+ * @route GET /products/categories
+ * @returns 200 with categories, 404 if none found
+ *
+ * Caches result for 5 minutes.
+ */
 export const getProductCategories = async (req: Request, res: Response) => {
   try {
     const categories = await Category.find();
@@ -134,6 +162,14 @@ export const getProductCategories = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Fetch all product brands.
+ *
+ * @route GET /products/brands
+ * @returns 200 with brands, 404 if none found
+ *
+ * Caches result for 5 minutes.
+ */
 export const getProductBrands = async (req: Request, res: Response) => {
   try {
     const brands = await Brand.find();
@@ -163,6 +199,22 @@ export const getProductBrands = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Create a new product.
+ *
+ * @route POST /products
+ * @param req.body.name (string) - Required
+ * @param req.body.brand (string) - Required (brand name)
+ * @param req.body.description (string) - Required
+ * @param req.body.category (string) - Required (category slug)
+ * @param req.body.price (number) - Required
+ * @param req.body.rating (number) - Optional
+ * @param req.body.image_url (string) - Optional
+ * @returns 200 with created product, 400 if missing fields
+ *
+ * Resolves brand and category to ObjectIds (creates if not exist).
+ * Caches result and invalidates related caches.
+ */
 export const createProduct = async (req: Request, res: Response) => {
   try {
     const { name, brand, description, category, price, rating, image_url } =
@@ -216,6 +268,17 @@ export const createProduct = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Update an existing product.
+ *
+ * @route PUT /products/:id
+ * @param req.params.id - The product's ObjectId
+ * @param req.body - Fields to update (brand and category as names/slugs)
+ * @returns 200 with updated product, 400 if invalid, 404 if not found
+ *
+ * Resolves brand and category to ObjectIds (creates if not exist).
+ * Caches result and invalidates related caches.
+ */
 export const updateProduct = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -274,6 +337,15 @@ export const updateProduct = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Delete a product by its ObjectId.
+ * 
+ * @route DELETE /products/:id
+ * @param req.params.id - The product's ObjectId
+ * @returns 200 if deleted, 400 if invalid, 404 if not found
+ * 
+ * Invalidates related caches.
+ */
 export const deleteProduct = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
