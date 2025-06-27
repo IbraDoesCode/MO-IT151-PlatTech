@@ -11,6 +11,7 @@ import {
   PRODUCT_QUERY_PREFIX,
   TIME_TO_LIVE,
 } from "../utils/cache";
+import { resolveBrand, resolveCategory } from "../utils/resolveRefs";
 
 export const getProductById = async (req: Request, res: Response) => {
   try {
@@ -128,11 +129,14 @@ export const createProduct = async (req: Request, res: Response) => {
       productImageUrl = "https://placehold.co/300/webp?text=Image%20Here";
     }
 
+    const brandId = (await resolveBrand(brand))._id;
+    const categoryId = (await resolveCategory(category))._id;
+
     const newProduct = new Product({
       name,
-      brand,
+      brand: brandId,
       description,
-      category,
+      category: categoryId,
       price,
       rating,
       image_url: productImageUrl,
@@ -140,18 +144,20 @@ export const createProduct = async (req: Request, res: Response) => {
 
     const savedProduct = await newProduct.save();
 
+    const populatedProduct = await savedProduct.populate(["brand", "category"]);
+
     // Cache the newly created product by ID (for direct lookup)
     await redis.set(
-      `${PRODUCT_BY_ID_PREFIX}${savedProduct._id}`,
-      JSON.stringify(savedProduct),
+      `${PRODUCT_BY_ID_PREFIX}${populatedProduct._id}`,
+      JSON.stringify(populatedProduct),
       "EX",
       TIME_TO_LIVE
     );
 
     // Invalidate all related caches after a new product is created
-    await invalidateProductCache(savedProduct._id.toString());
+    await invalidateProductCache(populatedProduct._id.toString());
 
-    HTTPResponse.ok(res, "Product successfully created.", savedProduct);
+    HTTPResponse.ok(res, "Product successfully created.", populatedProduct);
   } catch (error) {
     logger.error("An unexpected error has occurred", error);
     HTTPResponse.internalServerError(res, "Internal server error", error);
@@ -174,10 +180,24 @@ export const updateProduct = async (req: Request, res: Response) => {
       return;
     }
 
-    const updatedProduct = await Product.findByIdAndUpdate(id, updateFields, {
-      new: true,
-      runValidators: true,
-    });
+    const { brand, category, ...restUpdateFields } = updateFields;
+
+    // Resolve to object ids
+    const brandId = (await resolveBrand(brand))._id;
+    const categoryId = (await resolveCategory(brand))._id;
+
+    const updatedProduct = await Product.findByIdAndUpdate(
+      id,
+      {
+        brand: brandId,
+        category: categoryId,
+        ...restUpdateFields,
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).populate(["brand", "category"]);
 
     if (!updatedProduct) {
       HTTPResponse.notFound(res, "Product not found.");
