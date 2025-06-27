@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import logger from "../utils/logger";
 import { HTTPResponse } from "../utils/http-response";
-import Cart from "../models/cart.model";
+import Cart, { ICart } from "../models/cart.model";
 import mongoose from "mongoose";
 
 // valid user id:
@@ -12,16 +12,22 @@ import mongoose from "mongoose";
 
 export const createCart = async (req: Request, res: Response) => {
   try {
-    const { userId } = req.body;
+    const { userId } = req.body || {};
 
     if (userId && !mongoose.Types.ObjectId.isValid(userId)) {
       HTTPResponse.badRequest(res, "Invalid user ID.");
       return;
     }
 
-    const cart = new Cart({ items: [], ...(userId && { userId }) });
+    // Even if the userId doesn't exist, proceed with creation
+    const cartData: ICart = { items: [] };
 
-    const savedCart = await cart.save();
+    if (userId) cartData.userId = userId;
+
+    // Create the cart session
+    const newCart = new Cart(cartData);
+
+    const savedCart = await newCart.save();
 
     HTTPResponse.ok(res, "Successfully created cart.", savedCart);
   } catch (error) {
@@ -105,6 +111,6 @@ export const deleteCart = async (req: Request, res: Response) => {
     HTTPResponse.ok(res, "Cart deleted", id);
   } catch (error) {
     logger.error("Failed to delete cart", { error });
-    HTTPResponse.internalServerError(res, "Could not delete cart") 
+    HTTPResponse.internalServerError(res, "Could not delete cart");
   }
-}
+};

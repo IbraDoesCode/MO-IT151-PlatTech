@@ -5,7 +5,7 @@ interface ICartItem {
   quantity: number;
 }
 
-interface ICart {
+export interface ICart {
   items: ICartItem[];
   userId?: Types.ObjectId;
 }
