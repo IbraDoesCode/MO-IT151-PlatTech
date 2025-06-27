@@ -61,7 +61,7 @@ const productSchema = new Schema<IProduct>(
         }
 
         if (ret.category && typeof ret.category == "object") {
-          ret.category = ret.category.name;
+          ret.category = ret.category.slug;
         }
 
         return ret;

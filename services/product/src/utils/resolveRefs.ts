@@ -13,12 +13,19 @@ export const resolveBrand = async (name: string) => {
   return brand;
 };
 
-export const resolveCategory = async (name: string) => {
+export const resolveCategory = async (slug: string) => {
+  const name = slug
+    .split("-")
+    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+    .join(" ");
+
+  const url = `http://localhost:3000/product?category=${slug}`;
+
   const category = await Category.findOneAndUpdate(
+    { slug },
     {
-      name,
+      $setOnInsert: { name, url }, // Only set name and url if inserting
     },
-    { name },
     { upsert: true, new: true }
   );
 
