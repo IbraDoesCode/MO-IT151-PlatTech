@@ -18,9 +18,9 @@ export const createFavorite = async (req: Request, res: Response) => {
       favorites: [],
     });
 
-    const savedFavorite = newFavorite.save();
+    const savedFavorite = await newFavorite.save();
 
-    HTTPResponse.ok(res, "Successfully created favorites.", savedFavorite);
+    HTTPResponse.ok(res, "Successfully created favorites.", savedFavorite._id);
   } catch (error) {
     logger.error("Failed to create favorites", { error });
     HTTPResponse.internalServerError(res, "Could not create favorites");
