@@ -2,7 +2,9 @@ import { Request, Response } from "express";
 import logger from "../utils/logger";
 import { HTTPResponse } from "../utils/http-response";
 import Cart, { ICart } from "../models/cart.model";
-import mongoose from "mongoose";
+import mongoose, { HydratedDocument } from "mongoose";
+import Product, { IProduct } from "../models/product.model";
+import { invalidateProductCache } from "../utils/cache";
 
 // valid user id:
 // 685de027e9ae7f83b7f143d0
@@ -95,6 +97,39 @@ export const updateCart = async (req: Request, res: Response) => {
     if (!mongoose.Types.ObjectId.isValid(cartId)) {
       HTTPResponse.badRequest(res, "Invalid Cart ID.");
       return;
+    }
+
+    // Get all product IDs from items
+    const productIds = items.map((item: any) => item.product);
+
+    // Fetch all required products at once
+    const products = await Product.find({ _id: { $in: productIds } }).lean();
+
+    // Create a map for quick lookup
+    const productMap = new Map(products.map((p) => [p._id.toString(), p]));
+
+    for (const item of items) {
+      const product = productMap.get(item.product);
+      if (!product) {
+        HTTPResponse.notFound(res, `Product not found: ${item.product}`);
+        return;
+      }
+
+      if (item.quantity == 0) {
+        HTTPResponse.badRequest(
+          res,
+          `Quantity for product ${product.name} cannot be 0.`
+        );
+        return;
+      }
+
+      if (item.quantity > product.quantity) {
+        HTTPResponse.badRequest(
+          res,
+          `Quantity for product ${product.name} exceeds available stock (${product.quantity}).`
+        );
+        return;
+      }
     }
 
     const updatedCart = await Cart.findByIdAndUpdate(
@@ -201,6 +236,21 @@ export const upsertCartItem = async (req: Request, res: Response) => {
       return;
     }
 
+    // Validate stock quantity
+    const product = await Product.findById(productId);
+    if (!product) {
+      HTTPResponse.notFound(res, "Product not found.");
+      return;
+    }
+
+    if (quantity > product.quantity) {
+      HTTPResponse.badRequest(
+        res,
+        `Cannot add more than ${product.quantity} item(s) for this product.`
+      );
+      return;
+    }
+
     const updateResult = await Cart.findOneAndUpdate(
       { _id: cartId, "items.product": productId },
       { $set: { "items.$.quantity": quantity } },
@@ -286,5 +336,66 @@ export const removeCartItem = async (req: Request, res: Response) => {
   } catch (error) {
     logger.error("Failed to update cart item", { error });
     HTTPResponse.internalServerError(res, "Could not update cart");
+  }
+};
+
+export const checkoutCart = async (req: Request, res: Response) => {
+  try {
+    const { cartId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(cartId)) {
+      HTTPResponse.badRequest(res, "Invalid Cart ID.");
+      return;
+    }
+
+    const cart = await Cart.findById(cartId).populate("items.product");
+    if (!cart) {
+      HTTPResponse.notFound(res, "Cart not found.");
+      return;
+    }
+
+    if (cart.items.length === 0) {
+      HTTPResponse.badRequest(res, "Cart is empty. Nothing to checkout.");
+      return;
+    }
+
+    // Validate stock first
+    const outOfStockItems = cart.items.filter((item) => {
+      const product = item.product as unknown as HydratedDocument<IProduct>;
+      return item.quantity > product.quantity;
+    });
+
+    if (outOfStockItems.length > 0) {
+      const names = outOfStockItems
+        .map(
+          (item) => (item.product as unknown as HydratedDocument<IProduct>).name
+        )
+        .join(", ");
+      HTTPResponse.badRequest(res, `Insufficient stock for: ${names}`);
+      return;
+    }
+
+    // Deduct stock quantities
+    const bulkOps = cart.items.map((item) => ({
+      updateOne: {
+        filter: { _id: item.product._id },
+        update: { $inc: { quantity: -item.quantity } },
+      },
+    }));
+
+    await Product.bulkWrite(bulkOps);
+
+    // Invalidate cache for all affected products
+    const productIds = cart.items.map((item) => item.product.id.toString());
+    await invalidateProductCache(productIds);
+
+    // Optionally clear the cart after checkout
+    cart.items = [];
+    await cart.save();
+
+    HTTPResponse.ok(res, "Checkout successful. Product stock updated.", cart);
+  } catch (error) {
+    logger.error("Failed to checkout cart", { error });
+    HTTPResponse.internalServerError(res, "Checkout failed", error);
   }
 };
