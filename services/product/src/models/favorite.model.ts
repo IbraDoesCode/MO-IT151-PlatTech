@@ -26,6 +26,7 @@ const favoriteSchema = new Schema<IFavorite>(
     quantity: {
       type: Number,
       default: 0,
+      min: [0, "Quantity cannot be negative"],
     },
   },
   {
