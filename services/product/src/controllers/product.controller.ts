@@ -217,8 +217,16 @@ export const getProductBrands = async (req: Request, res: Response) => {
  */
 export const createProduct = async (req: Request, res: Response) => {
   try {
-    const { name, brand, description, category, price, rating, image_url } =
-      req.body;
+    const {
+      name,
+      brand,
+      description,
+      category,
+      price,
+      rating,
+      quantity,
+      image_url,
+    } = req.body;
 
     if (!name || !brand || !description || !category || !price) {
       HTTPResponse.badRequest(
@@ -243,6 +251,7 @@ export const createProduct = async (req: Request, res: Response) => {
       category: categoryId,
       price,
       rating,
+      quantity,
       image_url: productImageUrl,
     });
 
@@ -339,11 +348,11 @@ export const updateProduct = async (req: Request, res: Response) => {
 
 /**
  * Delete a product by its ObjectId.
- * 
+ *
  * @route DELETE /product/:id
  * @param req.params.id - The product's ObjectId
  * @returns 200 if deleted, 400 if invalid, 404 if not found
- * 
+ *
  * Invalidates related caches.
  */
 export const deleteProduct = async (req: Request, res: Response) => {
