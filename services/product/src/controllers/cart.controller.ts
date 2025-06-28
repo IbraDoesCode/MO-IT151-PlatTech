@@ -339,6 +339,15 @@ export const removeCartItem = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Checkout a cart and deduct product quantities.
+ *
+ * @route PUT /cart/:cartId/checkout
+ * @param req.params.cartId - The cart's ObjectId (string)
+ * @returns 200 if checkout succeeds, 400 for validation errors, 404 if cart not found
+ *
+ * Validates stock, deducts product quantities, clears the cart, and invalidates related caches.
+ */
 export const checkoutCart = async (req: Request, res: Response) => {
   try {
     const { cartId } = req.params;
@@ -385,13 +394,13 @@ export const checkoutCart = async (req: Request, res: Response) => {
 
     await Product.bulkWrite(bulkOps);
 
-    // Invalidate cache for all affected products
-    const productIds = cart.items.map((item) => item.product.id.toString());
-    await invalidateProductCache(productIds);
-
     // Optionally clear the cart after checkout
     cart.items = [];
     await cart.save();
+
+    // Invalidate cache for all affected products
+    const productIds = cart.items.map((item) => item.product.id.toString());
+    await invalidateProductCache(productIds);
 
     HTTPResponse.ok(res, "Checkout successful. Product stock updated.", cart);
   } catch (error) {
