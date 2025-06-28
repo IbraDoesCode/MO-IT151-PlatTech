@@ -5,6 +5,8 @@ import { connectDB } from "../utils/mongo";
 import { resolveBrand, resolveCategory } from "../utils/resolveRefs";
 import Brand from "../models/brand.model";
 import Category from "../models/category.model";
+import Cart from "../models/cart.model";
+import Favorite from "../models/favorite.model";
 
 dotenv.config({ path: "./.env" });
 
@@ -14,6 +16,8 @@ const seedProducts = async () => {
     Product.deleteMany(),
     Brand.deleteMany(),
     Category.deleteMany(),
+    Cart.deleteMany(),
+    Favorite.deleteMany()
   ]);
 
   console.debug("ℹ️  Seeding database...");
@@ -38,6 +42,7 @@ const seedProducts = async () => {
         category: categoryId,
         price: product.price,
         rating: product.rating,
+        quantity: Math.floor(Math.random() * 100) + 1,
         image_url: product.thumbnail,
       };
     })

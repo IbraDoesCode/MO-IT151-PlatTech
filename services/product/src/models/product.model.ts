@@ -10,6 +10,7 @@ export interface IProduct {
   category: mongoose.Types.ObjectId;
   price: number;
   rating: number;
+  quantity: number;
   image_url: string;
 }
 
@@ -40,6 +41,12 @@ const productSchema = new Schema<IProduct>(
     rating: {
       type: Number,
       default: 0,
+    },
+    quantity: {
+      type: Number,
+      default: 1,
+      required: true,
+      min: [0, "Quantity cannot be negative"],
     },
     image_url: {
       type: String,
