@@ -268,7 +268,7 @@ export const createProduct = async (req: Request, res: Response) => {
     );
 
     // Invalidate all related caches after a new product is created
-    await invalidateProductCache(populatedProduct._id.toString());
+    await invalidateProductCache([populatedProduct._id.toString()]);
 
     HTTPResponse.ok(res, "Product successfully created.", populatedProduct);
   } catch (error) {
@@ -337,7 +337,7 @@ export const updateProduct = async (req: Request, res: Response) => {
     );
 
     // Invalidate all related caches after a product is updated
-    await invalidateProductCache(updatedProduct._id.toString());
+    await invalidateProductCache([updatedProduct._id.toString()]);
 
     HTTPResponse.ok(res, "Product successfully updated.", updatedProduct);
   } catch (error) {
@@ -372,7 +372,7 @@ export const deleteProduct = async (req: Request, res: Response) => {
     }
 
     // Invalidate all related caches of this product
-    await invalidateProductCache(id);
+    await invalidateProductCache([id]);
 
     HTTPResponse.ok(res, `Product deleted successfully: ${id}`, null);
   } catch (error) {

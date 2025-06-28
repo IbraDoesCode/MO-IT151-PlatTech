@@ -5,7 +5,7 @@ export const PRODUCT_BY_ID_PREFIX = "product:id:";
 export const PRODUCT_QUERY_PREFIX = "products:query:";
 // This SET will hold all the keys generated for product listings
 export const ACTIVE_PRODUCT_LISTING_KEYS_SET = "active_product_listing_keys";
-export const TIME_TO_LIVE = 300
+export const TIME_TO_LIVE = 300;
 
 /**
  * Invalidates product-related caches in Redis.
@@ -13,15 +13,13 @@ export const TIME_TO_LIVE = 300
  * to track and invalidate product listing caches.
  * @param productId Optional. The ID of the product to invalidate specific caches for.
  */
-export const invalidateProductCache = async (
-  productId?: string,
-) => {
+export const invalidateProductCache = async (productIds?: string[]) => {
   try {
     // Invalidate individual product cache by ID
-    if (productId) {
-      const individualProductIdCacheKey = `${PRODUCT_BY_ID_PREFIX}${productId}`;
-      await redis.del(individualProductIdCacheKey);
-      logger.info(`Invalidated cache for ${individualProductIdCacheKey}`);
+    if (productIds?.length) {
+      const keys = productIds.map((id) => `${PRODUCT_BY_ID_PREFIX}${id}`);
+      await redis.del(...keys);
+      logger.info(`Invalidated ${keys.length} individual product cache keys.`);
     }
 
     // Retrieve all members from the master set of product listing keys
@@ -29,7 +27,7 @@ export const invalidateProductCache = async (
       ACTIVE_PRODUCT_LISTING_KEYS_SET
     );
 
-    logger.info(productQueryKeysToInvalidate)
+    logger.info(productQueryKeysToInvalidate);
 
     if (productQueryKeysToInvalidate.length > 0) {
       // Delete all the cached entries
