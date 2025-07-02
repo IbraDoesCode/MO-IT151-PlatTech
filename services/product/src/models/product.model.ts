@@ -12,6 +12,7 @@ export interface IProduct {
   rating: number;
   quantity: number;
   image_url: string;
+  images: string[];
 }
 
 const productSchema = new Schema<IProduct>(
@@ -52,22 +53,33 @@ const productSchema = new Schema<IProduct>(
       type: String,
       required: true,
     },
+    images: {
+      type: [String],
+      required: true,
+      default: [],
+    },
   },
   {
     timestamps: true,
     versionKey: false,
     toJSON: {
       transform: function (_doc, ret) {
-        ret.id = ret._id.toString();
+        if (ret._id) {
+          ret.id = ret._id.toString();
+        }
 
         delete ret._id;
 
         // Since these are refs, put the proper name instead of the obj
-        if (ret.brand && typeof ret.brand == "object") {
+        if (ret.brand && typeof ret.brand == "object" && ret.brand.name) {
           ret.brand = ret.brand.name;
         }
 
-        if (ret.category && typeof ret.category == "object") {
+        if (
+          ret.category &&
+          typeof ret.category == "object" &&
+          ret.category.slug
+        ) {
           ret.category = ret.category.slug;
         }
 
@@ -79,7 +91,14 @@ const productSchema = new Schema<IProduct>(
 
 // --- Middleware ---
 function autoPopulate(this: any, next: any) {
-  this.populate("brand").populate("category");
+  const populatedPaths = this.getPopulatedPaths();
+
+  if (!populatedPaths.includes("brand")) {
+    this.populate("brand");
+  }
+  if (!populatedPaths.includes("category")) {
+    this.populate("category");
+  }
   next();
 }
 

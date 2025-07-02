@@ -17,6 +17,7 @@ interface CartCardProps {
   category: string;
   price: number;
   quantity: number;
+  onQuantityChange: (val: number | string) => void;
 }
 
 function CartCard(props: CartCardProps) {
@@ -56,6 +57,8 @@ function CartCard(props: CartCardProps) {
               defaultValue={props.quantity}
               allowDecimal={false}
               allowNegative={false}
+              min={0}
+              onChange={props.onQuantityChange}
             />
           </Group>
         </GridCol>

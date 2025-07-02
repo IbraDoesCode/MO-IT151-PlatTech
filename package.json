@@ -4,9 +4,15 @@
   "description": "",
   "packageManager": "pnpm@10.10.0",
   "scripts": {
-    "compose": "docker-compose -f docker-compose.yml up --build",
+    "dev": "concurrently -n frontend,backend -c cyan,magenta \"pnpm frontend\" \"pnpm backend\"",
+    "frontend": "cd client && pnpm run dev",
     "backend": "cd services/product && pnpm run dev",
+    "compose": "docker-compose -f docker-compose.yml up --build",
     "db": "docker compose -f compose.database.yml up -d",
+    "seed-db": "cd services/product && pnpm run seed",
     "dbdown": "docker compose -f compose.database.yml down"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.0"
   }
 }

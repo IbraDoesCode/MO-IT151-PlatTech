@@ -49,6 +49,7 @@ const theme = createTheme({
     ],
   },
   primaryColor: "black",
+  cursorType: "pointer",
 });
 
 // Render the app

@@ -6,27 +6,27 @@ A prototype microservice that lists products with support for searching, filteri
 
 ## 🚀 Features
 
-* 🔍 Product listing with search, filter, pagination
+- 🔍 Product listing with search, filter, pagination
 
-* 🔒 Rate limiting on public product endpoints
+- 🔒 Rate limiting on public product endpoints
 
-* ⚡ Redis caching for most-viewed products
+- ⚡ Redis caching for most-viewed products
 
-* 🧩 API Gateway as single entry point
+- 🧩 API Gateway as single entry point
 
-* 🧾 Clean, RESTful endpoints
+- 🧾 Clean, RESTful endpoints
 
 ## 📦 Tech Stack
 
-* **Frontend**: React + React Query
+- **Frontend**: React + React Query
 
-* **Backend**: Node.js, Express, MongoDB
+- **Backend**: Node.js, Express, MongoDB
 
-* **Gateway**: Node.js + Express + Rate Limiter
+- **Gateway**: Node.js + Express + Rate Limiter
 
-* **Cache**: Redis
+- **Cache**: Redis
 
-* **Infra**: Docker + Docker Compose
+- **Infra**: Docker + Docker Compose
 
 ## 🔧 Installation
 
@@ -71,7 +71,7 @@ REDIS_PORT=xxx
 
 ```
 
-*To access the required secrets (values for `xxx`), please head over to the `plattech-secrets` Discord text channel.*
+_To access the required secrets (values for `xxx`), please head over to the `plattech-secrets` Discord text channel._
 
 ### Running the Services
 

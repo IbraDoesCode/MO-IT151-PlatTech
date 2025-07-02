@@ -7,19 +7,21 @@ import httpLogger from "./middleware/httpLogger";
 import rateLimiter from "./middleware/rateLimitter";
 import cartRoute from "./routes/cart.route";
 import favoriteRoute from "./routes/favorite.routes";
+import cors from "cors";
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3002;
 
+app.use(cors());
 app.use(express.json());
 app.use(httpLogger);
 app.use(rateLimiter);
 
-app.use("/product", productRoute);
+app.use("/products", productRoute);
 app.use("/cart", cartRoute);
-app.use("/favorite", favoriteRoute);
+app.use("/favorites", favoriteRoute);
 
 app.listen(PORT, async () => {
   await connectDB();

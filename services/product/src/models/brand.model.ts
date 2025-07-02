@@ -6,7 +6,20 @@ interface IBrand {
 
 const brandSchema = new Schema<IBrand>(
   { name: { type: String, required: true, unique: true } },
-  { timestamps: true, versionKey: false }
+  {
+    timestamps: true,
+    versionKey: false,
+    toJSON: {
+      transform: function (_doc, ret) {
+        if (ret._id) {
+          ret.id = ret._id.toString();
+        }
+        delete ret._id;
+
+        return ret;
+      },
+    },
+  }
 );
 
 const Brand = model<IBrand>("brand", brandSchema);

@@ -20,11 +20,13 @@
     "@tanstack/react-router-devtools": "^1.121.2",
     "@tanstack/react-virtual": "^3.13.10",
     "@tanstack/router-plugin": "^1.121.2",
+    "dayjs": "^1.11.13",
     "motion": "^12.19.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "recharts": "^2.15.4",
-    "tailwindcss": "^4.1.10"
+    "tailwindcss": "^4.1.10",
+    "zod": "^3.25.67"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.0",

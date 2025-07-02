@@ -1,6 +1,6 @@
 import CartCard from "@/components/cart-card";
-import type { Product } from "@/data/api/products-mock";
-import { useProductsQuery } from "@/data/query/productQuery";
+import { useCartMutation, useCartQuery } from "@/data/query/cartQuery";
+import type { CartItem } from "@/types/cart";
 import {
   Button,
   Container,
@@ -21,14 +21,14 @@ export const Route = createFileRoute("/(user)/_navbar/cart/")({
 });
 
 function CartPage() {
-  const { data } = useProductsQuery();
+  const { data } = useCartQuery(localStorage.getItem("cartId") || "");
 
-  const itemList = [1, 2, 3, 4];
+  const cart = data?.data.items;
 
-  const cart = data && data?.filter((item) => itemList.includes(item.id));
+  console.log(data);
 
   return (
-    <Container size="xl" className="pt-10">
+    <Container size="xl" className="pt-10 w-full flex-1">
       <Group className="mb-8">
         <Title order={2}>Shopping Cart</Title>
       </Group>
@@ -42,10 +42,20 @@ function CartPage() {
 }
 
 interface CartProps {
-  cartItems: Product[] | undefined;
+  cartItems: CartItem[] | undefined;
 }
 
 function ItemsSection({ cartItems }: CartProps) {
+  const cartId = localStorage.getItem("cartId") || "";
+  const { mutate: cartMutate } = useCartMutation(cartId);
+
+  const handleItemQuantity = (productId: string, val: number | string) => {
+    cartMutate({ productId: productId, quantity: Number(val) });
+    // if (val != 0) {
+    // } else {
+    // }
+  };
+
   return (
     <Stack className="flex-1">
       <Grid>
@@ -79,13 +89,14 @@ function ItemsSection({ cartItems }: CartProps) {
       {cartItems &&
         cartItems.map((item) => (
           <CartCard
-            key={item.id}
-            id={`${item.id}`}
-            name={item.title}
-            category={item.category}
-            imageUrl={item.image}
-            price={item.price}
-            quantity={1}
+            key={item.product.id}
+            id={`${item.product.id}`}
+            name={item.product.name}
+            category={item.product.category}
+            imageUrl={item.product.image_url}
+            price={item.product.price}
+            quantity={item.quantity}
+            onQuantityChange={(val) => handleItemQuantity(item.product.id, val)}
           />
         ))}
     </Stack>
@@ -99,7 +110,7 @@ function SummarySection({ cartItems }: CartProps) {
   });
 
   const subtotal =
-    cartItems && cartItems.reduce((acc, val) => acc + val.price, 0);
+    cartItems && cartItems.reduce((acc, val) => acc + val.product.price, 0);
   const shipping = 10.0;
   const taxes = 10.0;
   const total = subtotal && subtotal + shipping + taxes;
