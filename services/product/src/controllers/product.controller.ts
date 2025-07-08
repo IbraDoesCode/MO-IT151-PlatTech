@@ -145,6 +145,38 @@ export const getProducts = async (req: Request, res: Response) => {
 };
 
 /**
+ * Fetch a list of products matching a partial name for autocomplete.
+ *
+ * @route GET /products/autocomplete?q=searchTerm
+ * @returns 200 with a limited list of matching product names and IDs
+ */
+export const autocompleteProducts = async (req: Request, res: Response) => {
+  try {
+    const searchQuery = (req.query.q as string)?.trim();
+
+    // If the query is blank or missing, return an empty list instead of an error
+    if (!searchQuery) {
+      HTTPResponse.ok(res, "Empty query. No products returned.", []);
+      return;
+    }
+
+    const products = await Product.find({
+      name: { $regex: searchQuery, $options: "i" },
+    })
+      .limit(8)
+      .select("name image_url");
+
+    HTTPResponse.ok(res, "Autocomplete results retrieved.", products);
+  } catch (error) {
+    logger.error("Failed to fetch autocomplete results", { error });
+    HTTPResponse.internalServerError(
+      res,
+      "Could not fetch autocomplete results."
+    );
+  }
+};
+
+/**
  * Fetch all product categories.
  *
  * @route GET /product/categories

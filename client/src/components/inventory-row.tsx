@@ -1,19 +1,13 @@
-import {
-  AspectRatio,
-  Card,
-  Grid,
-  GridCol,
-  Group,
-  Image,
-  Text,
-} from "@mantine/core";
+import { ActionIcon, Grid, GridCol, Group, Text } from "@mantine/core";
+import ImageHolder from "./image-holder";
+import { IconEdit, IconEye, IconTrash } from "@tabler/icons-react";
 
 interface InventoryRowProps {
   id: string;
   imageUrl: string;
   name: string;
-  description: string;
   category: string;
+  brand: string | undefined;
   price: number;
   stock: number;
 }
@@ -26,43 +20,75 @@ function InventoryRow(props: InventoryRowProps) {
 
   return (
     <Group className="p-5 hover:bg-neutral-300/20 hover:cursor-pointer transition-all">
-      <Grid>
-        <GridCol span={1}>
-          <AspectRatio ratio={1 / 1}>
-            <Image src={props.imageUrl} fit="contain" h={70} />
-          </AspectRatio>
+      <Grid gutter={0} className="flex-1">
+        <GridCol span={1.5}>
+          <Group align="center">
+            <ImageHolder image={props.imageUrl} height={70} />
+          </Group>
         </GridCol>
 
-        <GridCol span={3.5}>
-          <Group align="center">
+        <GridCol span={2.5}>
+          <Group h="100%" align="center">
             <Text size="md" fw={500}>
               {props.name}
             </Text>
           </Group>
         </GridCol>
 
-        <GridCol span={3}>
-          <Group align="center">
-            <Text c="dimmed" size="sm" lineClamp={3}>
-              {props.description}
-            </Text>
-          </Group>
-        </GridCol>
-
         <GridCol span={1.5}>
-          <Group align="center">
+          <Group h="100%" align="center">
             <Text className="capitalize">{props.category}</Text>
           </Group>
         </GridCol>
 
         <GridCol span={1.5}>
-          <Group justify="center">{curr.format(props.price)}</Group>
+          <Group h="100%" align="center">
+            <Text className="capitalize">{props.brand || "-"}</Text>
+          </Group>
         </GridCol>
 
-        <GridCol span={1.5}>
-          <Group justify="center">{props.stock}</Group>
+        <GridCol span={1}>
+          <Group h="100%" align="center" justify="center">
+            {curr.format(props.price)}
+          </Group>
+        </GridCol>
+
+        <GridCol span={1}>
+          <Group h="100%" align="center" justify="center">
+            {props.stock}
+          </Group>
+        </GridCol>
+
+        <GridCol span={1}>
+          <Group justify="center">
+            <Text size="md" fw={500}>
+              Status
+            </Text>
+          </Group>
+        </GridCol>
+
+        <GridCol span={2}>
+          <RowActions />
         </GridCol>
       </Grid>
+    </Group>
+  );
+}
+
+function RowActions() {
+  return (
+    <Group h="100%" align="center" justify="center" gap="sm">
+      <ActionIcon variant="subtle" size="md" radius="xl">
+        <IconEye />
+      </ActionIcon>
+
+      <ActionIcon variant="subtle" size="md" radius="xl">
+        <IconEdit />
+      </ActionIcon>
+
+      <ActionIcon variant="subtle" size="md" radius="xl">
+        <IconTrash />
+      </ActionIcon>
     </Group>
   );
 }

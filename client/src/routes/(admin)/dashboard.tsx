@@ -8,15 +8,17 @@ import {
   Grid,
   GridCol,
   Group,
+  Pagination,
+  Progress,
+  ProgressSection,
   Stack,
   Text,
   TextInput,
   Title,
 } from "@mantine/core";
 import { createFileRoute } from "@tanstack/react-router";
-import { DonutChart } from "@mantine/charts";
 import {
-  IconCurrencyPeso,
+  IconCircleFilled,
   IconFilter,
   IconPackage,
   IconPlus,
@@ -26,6 +28,7 @@ import {
 } from "@tabler/icons-react";
 import InventoryRow from "@/components/inventory-row";
 import { useProductsQuery } from "@/data/query/productQuery";
+import { useState } from "react";
 
 export const Route = createFileRoute("/(admin)/dashboard")({
   component: DashboardPage,
@@ -33,29 +36,24 @@ export const Route = createFileRoute("/(admin)/dashboard")({
 
 function DashboardPage() {
   return (
-    <Container size="lg" className="pt-10">
-      <Title order={2} mb="lg">
-        Product Inventory
-      </Title>
-      <Stack>
-        <KPISection />
+    <Stack mih="100vh" className="flex flex-col  bg-neutral-50">
+      <Container size="lg" className="w-full flex-1 pt-10">
+        <Title order={2} mb="lg">
+          Product Inventory
+        </Title>
+        <Stack>
+          <KPISection />
 
-        <ActionBar />
+          <ActionBar />
 
-        <ProductTable />
-      </Stack>
-    </Container>
+          <ProductTable />
+        </Stack>
+      </Container>
+    </Stack>
   );
 }
 
 function KPISection() {
-  const data = [
-    { name: "Electronics", value: 6, color: "black" },
-    { name: "Jewelery", value: 4, color: "black" },
-    { name: "Men's Clothing", value: 4, color: "black" },
-    { name: "Women's Clothing", value: 6, color: "black" },
-  ];
-
   const curr = new Intl.NumberFormat("en-PH", {
     style: "currency",
     currency: "PHP",
@@ -69,64 +67,99 @@ function KPISection() {
 
   return (
     <Group className="mb-4">
-      <Card withBorder style={{ overflow: "visible" }} className="h-34 flex-1">
-        <Group justify="space-between" className="px-4">
-          <Avatar size="lg">
-            <IconShirt color="black" size={34} />
-          </Avatar>
-
-          <Stack align="end">
-            <Text size="lg" c="dimmed">
-              Total Products
-            </Text>
-            <Title order={2}>{totalProducts}</Title>
-          </Stack>
-        </Group>
+      <Card
+        style={{ overflow: "visible" }}
+        bg="black"
+        radius="lg"
+        className="h-34 w-3/12"
+      >
+        <Stack align="start" justify="center" gap={2} className="px-2 h-full">
+          <Text size="md" c="#dedede">
+            Total Asset Value
+          </Text>
+          <Title order={1} c="white">
+            {curr.format(priceEstimate)}
+          </Title>
+        </Stack>
       </Card>
 
-      <Card withBorder style={{ overflow: "visible" }} className="h-34 flex-1">
-        <Group justify="space-between" className="px-4">
-          <Avatar size="lg">
-            <IconPackage color="black" size={34} />
-          </Avatar>
+      <Card
+        withBorder
+        style={{ overflow: "visible" }}
+        radius="md"
+        className="h-34 flex-1"
+      >
+        <Stack>
+          <Group gap="sm">
+            <Avatar size={30}>
+              <IconShirt color="black" size={20} />
+            </Avatar>
+            <Title order={3}>{totalProducts}</Title>
+            <Text c="dimmed" fw={500}>
+              Products
+            </Text>
+          </Group>
 
-          <Stack align="end">
-            <Text size="lg" c="dimmed">
+          <Progress.Root>
+            <ProgressSection value={60} color="black" />
+            <ProgressSection value={20} color="gray" />
+            <ProgressSection value={20} color="#e9ecef" />
+          </Progress.Root>
+
+          <Group gap="lg">
+            <ChartLegend color="black" label="Active" />
+            <ChartLegend color="gray" label="Inactive" />
+            <ChartLegend color="#e9ecef" label="Discontinued" />
+          </Group>
+        </Stack>
+      </Card>
+
+      <Card
+        withBorder
+        style={{ overflow: "visible" }}
+        radius="md"
+        className="h-34 flex-1"
+      >
+        <Stack>
+          <Group gap="sm">
+            <Avatar size={30}>
+              <IconPackage color="black" size={20} />
+            </Avatar>
+            <Title order={3}>{totalStock}</Title>
+            <Text c="dimmed" fw={500}>
               Total Stock
             </Text>
-            <Title order={2}>{totalStock}</Title>
-          </Stack>
-        </Group>
+          </Group>
+
+          <Progress.Root>
+            <ProgressSection value={60} color="black" />
+            <ProgressSection value={20} color="gray" />
+            <ProgressSection value={20} color="#e9ecef" />
+          </Progress.Root>
+
+          <Group gap="lg">
+            <ChartLegend color="black" label="In Stock" />
+            <ChartLegend color="gray" label="Low Stock" />
+            <ChartLegend color="#e9ecef" label="Out of Stock" />
+          </Group>
+        </Stack>
       </Card>
+    </Group>
+  );
+}
 
-      <Card withBorder style={{ overflow: "visible" }} className="h-34 flex-1">
-        <Group justify="space-between" className="px-4">
-          <Avatar size="lg">
-            <IconCurrencyPeso color="black" size={34} />
-          </Avatar>
+interface ChartLegendProps {
+  color: string;
+  label: string;
+  value?: string;
+}
 
-          <Stack align="end">
-            <Text size="lg" c="dimmed">
-              Price Estimate
-            </Text>
-            <Title order={2}>{curr.format(priceEstimate)}</Title>
-          </Stack>
-        </Group>
-      </Card>
-
-      <Card withBorder style={{ overflow: "visible" }} className="h-34 flex-1">
-        <Group justify="space-between" align="start" className="px-2 h-full">
-          <Stack h="100%" justify="center">
-            <DonutChart size={80} thickness={14} data={data} />
-          </Stack>
-
-          <Stack align="end">
-            <Text size="lg" c="dimmed">
-              Categories
-            </Text>
-          </Stack>
-        </Group>
-      </Card>
+function ChartLegend(props: ChartLegendProps) {
+  return (
+    <Group gap={6}>
+      <IconCircleFilled size={14} color={props.color} />
+      <Text size="sm">{props.label}</Text>
+      {props.value !== undefined && <Text size="sm">{props.value}</Text>}
     </Group>
   );
 }
@@ -153,32 +186,32 @@ function ActionBar() {
 }
 
 function ProductTable() {
-  const { data } = useProductsQuery();
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const { data } = useProductsQuery({
+    page: currentPage,
+  });
+
+  const handlePageNavigate = (page: number) => {
+    setCurrentPage(page);
+  };
 
   return (
     <Stack className="flex-1 pb-20">
       <Card withBorder>
-        <Grid className="px-8">
-          <GridCol span={1}>
-            <Group align="center">
+        <Grid className="px-5 flex-1" gutter={0}>
+          <GridCol span={1.5}>
+            <Group>
               <Text size="md" fw={500}>
                 Image
               </Text>
             </Group>
           </GridCol>
 
-          <GridCol span={3.5}>
+          <GridCol span={2.5}>
             <Group align="center">
               <Text size="md" fw={500}>
                 Name
-              </Text>
-            </Group>
-          </GridCol>
-
-          <GridCol span={3}>
-            <Group align="center">
-              <Text size="md" fw={500}>
-                Description
               </Text>
             </Group>
           </GridCol>
@@ -192,6 +225,14 @@ function ProductTable() {
           </GridCol>
 
           <GridCol span={1.5}>
+            <Group align="center">
+              <Text size="md" fw={500}>
+                Brand
+              </Text>
+            </Group>
+          </GridCol>
+
+          <GridCol span={1}>
             <Group justify="center">
               <Text size="md" fw={500}>
                 Price
@@ -199,10 +240,26 @@ function ProductTable() {
             </Group>
           </GridCol>
 
-          <GridCol span={1.5}>
+          <GridCol span={1}>
             <Group justify="center">
               <Text size="md" fw={500}>
                 Stock
+              </Text>
+            </Group>
+          </GridCol>
+
+          <GridCol span={1}>
+            <Group justify="center">
+              <Text size="md" fw={500}>
+                Status
+              </Text>
+            </Group>
+          </GridCol>
+
+          <GridCol span={2}>
+            <Group justify="center">
+              <Text size="md" fw={500}>
+                Actions
               </Text>
             </Group>
           </GridCol>
@@ -211,21 +268,30 @@ function ProductTable() {
         <Divider mt="sm" />
 
         {data &&
-          data.map((item) => (
+          data.data.products.map((item) => (
             <>
               <InventoryRow
                 key={item.id}
                 id={`${item.id}`}
-                name={item.title}
+                name={item.name}
                 category={item.category}
-                imageUrl={item.image}
+                brand={typeof item.brand === "string" ? item.brand : undefined}
+                imageUrl={item.image_url}
                 price={item.price}
-                description={item.description}
-                stock={200}
+                stock={item.quantity}
               />
               <Divider my={2} />
             </>
           ))}
+
+        <Group justify="end" className="mt-4 px-4">
+          <Pagination
+            total={data?.data.totalPages || currentPage}
+            value={currentPage}
+            disabled={data === undefined}
+            onChange={handlePageNavigate}
+          />
+        </Group>
       </Card>
     </Stack>
   );

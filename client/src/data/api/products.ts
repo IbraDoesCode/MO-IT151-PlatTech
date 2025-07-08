@@ -38,6 +38,15 @@ export const getProduct = async (id: string) => {
   return data;
 };
 
+export const searchProducts = async (query: string) => {
+  const res = await fetch(`${BASE_URL}/products/autocomplete?q=${query}`);
+
+  const data: Response<Pick<Product, "id" | "name" | "image_url">[]> =
+    await res.json();
+
+  return data;
+};
+
 export const getCategories = async () => {
   const res = await fetch(`${BASE_URL}/products/categories`);
 

@@ -12,6 +12,7 @@ import {
   Checkbox,
   Container,
   Group,
+  Image,
   NumberInput,
   Pagination,
   RangeSlider,
@@ -28,6 +29,7 @@ import { useDebouncedCallback } from "@mantine/hooks";
 import { IconCurrencyPeso, IconFilter } from "@tabler/icons-react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import EmptyBag from "@/assets/empty-bag.png";
 
 export const Route = createFileRoute("/(user)/_navbar/products/")({
   component: ProductsPage,
@@ -126,7 +128,9 @@ function ProductFiltering() {
 
   const handleClearFilters = () => {
     navigate({
-      search: (_) => ({}),
+      search: (_) => ({
+        name: search.name,
+      }),
     });
     if (priceRange)
       setPriceRangeState([
@@ -134,8 +138,6 @@ function ProductFiltering() {
         Math.round(priceRange.data.maxPrice),
       ]);
   };
-
-  console.log(isCategoriesLoading);
 
   return (
     <Stack w={280} className="relative">
@@ -287,7 +289,7 @@ function ProductFiltering() {
 
 function ProductGallery() {
   const search = Route.useSearch();
-  const { data, isPending } = useProductsQuery(search);
+  const { data, isPending, isError } = useProductsQuery(search);
 
   const navigate = useNavigate({ from: Route.fullPath });
 
@@ -302,28 +304,42 @@ function ProductGallery() {
 
   return (
     <Stack className="flex-1 h-full pb-16" align="center" gap="xl">
-      <SimpleGrid className="flex-1 w-full" cols={3} spacing="sm">
-        {!isPending && data
-          ? data.data.products.map((product) => (
-              <Link
-                key={product.id}
-                to="/products/$productId"
-                params={{ productId: `${product.id}` }}
-              >
-                <ProductCard
-                  id={`${product.id}`}
-                  imageUrl={product.image_url}
-                  name={product.name}
-                  category={product.category}
-                  price={product.price}
-                  stock={5}
-                />
-              </Link>
-            ))
-          : Array.from(Array(10).keys()).map((key) => (
-              <ProductCardSkeleton key={key} />
-            ))}
-      </SimpleGrid>
+      {!isError ? (
+        <SimpleGrid className="flex-1 w-full" cols={3} spacing="sm">
+          {!isPending && data
+            ? data.data.products.map((product) => (
+                <Link
+                  key={product.id}
+                  to="/products/$productId"
+                  params={{ productId: `${product.id}` }}
+                >
+                  <ProductCard
+                    id={`${product.id}`}
+                    imageUrl={product.image_url}
+                    name={product.name}
+                    category={product.category}
+                    price={product.price}
+                    stock={5}
+                  />
+                </Link>
+              ))
+            : Array.from(Array(10).keys()).map((key) => (
+                <ProductCardSkeleton key={key} />
+              ))}
+        </SimpleGrid>
+      ) : (
+        <Stack
+          align="center"
+          justify="center"
+          gap={2}
+          className="w-full flex-1"
+        >
+          <Image src={EmptyBag} w={250} />
+          <Text size="xl" fw={500} c="#d6d6d6" className="select-none">
+            No Products Found
+          </Text>
+        </Stack>
+      )}
 
       <Pagination
         total={data?.data.totalPages || search.page}

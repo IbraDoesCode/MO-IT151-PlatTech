@@ -4,6 +4,7 @@ import {
   getPriceRange,
   getProduct,
   getProducts,
+  searchProducts,
 } from "../api/products";
 import type { ProductSearch } from "../validation/productSearch";
 import type { ApiError } from "@/types/errors";
@@ -37,6 +38,18 @@ export const productQueryOptions = (productId: string) =>
 
 export const useProductQuery = (productId: string) => {
   const query = useQuery(productQueryOptions(productId));
+
+  return query;
+};
+
+export const searchProductsQueryOptions = (search: string) =>
+  queryOptions({
+    queryKey: ["products-search", search],
+    queryFn: () => searchProducts(search),
+  });
+
+export const useSearchProductsQuery = (search: string) => {
+  const query = useQuery(searchProductsQueryOptions(search));
 
   return query;
 };

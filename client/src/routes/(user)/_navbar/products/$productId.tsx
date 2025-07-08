@@ -2,6 +2,10 @@ import ImageGallery from "@/components/image-gallery";
 import ImageGallerySkeleton from "@/components/skeleton/image-gallery-skeleton";
 import { useCartMutation, useCartQuery } from "@/data/query/cartQuery";
 import {
+  useFavoritesMutation,
+  useFavoritesQuery,
+} from "@/data/query/favoritesQuery";
+import {
   productQueryOptions,
   useProductQuery,
 } from "@/data/query/productQuery";
@@ -20,9 +24,11 @@ import {
   Text,
   Title,
 } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import {
   IconChevronLeft,
   IconHeart,
+  IconHeartFilled,
   IconShoppingCart,
 } from "@tabler/icons-react";
 import {
@@ -48,11 +54,19 @@ function ProductPage() {
   const { data: product, isPending } = useProductQuery(productId);
 
   const cartId = localStorage.getItem("cartId") || "";
+  const favoritesId = localStorage.getItem("favoritesId") || "";
 
   const { data: cart } = useCartQuery(cartId);
+  const { data: favorites } = useFavoritesQuery(
+    localStorage.getItem("favoritesId") || ""
+  );
   const { mutate: cartMutate } = useCartMutation(cartId);
+  const { mutate: favortiesMutate } = useFavoritesMutation(favoritesId);
 
   const data = product?.data;
+  const isFavorite = favorites?.data.favorites.some(
+    (item) => item.product.id === productId
+  );
 
   const handleAddToCart = () => {
     const cartItems = cart?.data.items;
@@ -63,6 +77,27 @@ function ProductPage() {
         cartMutate({ productId: productId, quantity: item.quantity + 1 });
     } else {
       cartMutate({ productId: productId, quantity: 1 });
+    }
+
+    notifications.show({
+      title: "Added to Cart",
+      message: "The item has been added to your cart",
+    });
+  };
+
+  const handleAddToFavorites = () => {
+    favortiesMutate({ productId: productId });
+
+    if (isFavorite) {
+      notifications.show({
+        title: "Removed frm Favorites",
+        message: "The item has been removed from your favorites",
+      });
+    } else {
+      notifications.show({
+        title: "Added to Favorites",
+        message: "The item has been added to your favorites",
+      });
     }
   };
 
@@ -190,8 +225,13 @@ function ProductPage() {
                     Add to Cart
                   </Button>
 
-                  <ActionIcon variant="outline" size="xl" radius="xl">
-                    <IconHeart />
+                  <ActionIcon
+                    variant={isFavorite ? "filled" : "outline"}
+                    size="xl"
+                    radius="xl"
+                    onClick={handleAddToFavorites}
+                  >
+                    {isFavorite ? <IconHeartFilled /> : <IconHeart />}
                   </ActionIcon>
                 </Group>
               </Stack>

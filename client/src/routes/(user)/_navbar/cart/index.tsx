@@ -8,6 +8,8 @@ import {
   Grid,
   GridCol,
   Group,
+  Image,
+  Loader,
   Stack,
   Text,
   TextInput,
@@ -15,27 +17,52 @@ import {
 } from "@mantine/core";
 import { IconShoppingBag } from "@tabler/icons-react";
 import { createFileRoute } from "@tanstack/react-router";
+import EmptyCart from "@/assets/empty-cart.png";
 
 export const Route = createFileRoute("/(user)/_navbar/cart/")({
   component: CartPage,
 });
 
 function CartPage() {
-  const { data } = useCartQuery(localStorage.getItem("cartId") || "");
+  const { data, isPending } = useCartQuery(
+    localStorage.getItem("cartId") || ""
+  );
 
   const cart = data?.data.items;
 
-  console.log(data);
-
   return (
     <Container size="xl" className="pt-10 w-full flex-1">
-      <Group className="mb-8">
+      <Stack gap={0} className="mb-4">
         <Title order={2}>Shopping Cart</Title>
-      </Group>
-      <Group align="start" gap="xl">
-        <ItemsSection cartItems={cart} />
+        <Text opacity={0.6}>Review your items before checking out.</Text>
+      </Stack>
 
-        <SummarySection cartItems={cart} />
+      <Group align="start" gap="xl">
+        {!isPending ? (
+          cart && cart.length > 0 ? (
+            <>
+              <ItemsSection cartItems={cart} />
+
+              <SummarySection cartItems={cart} />
+            </>
+          ) : (
+            <Stack
+              align="center"
+              justify="center"
+              gap={2}
+              className="w-full flex-1"
+            >
+              <Image src={EmptyCart} w={250} className="grayscale" />
+              <Text size="xl" fw={500} c="#d6d6d6" className="select-none">
+                Your cart is empty
+              </Text>
+            </Stack>
+          )
+        ) : (
+          <Stack align="center" justify="center" className="w-full flex-1">
+            <Loader />
+          </Stack>
+        )}
       </Group>
     </Container>
   );
@@ -51,17 +78,14 @@ function ItemsSection({ cartItems }: CartProps) {
 
   const handleItemQuantity = (productId: string, val: number | string) => {
     cartMutate({ productId: productId, quantity: Number(val) });
-    // if (val != 0) {
-    // } else {
-    // }
   };
 
   return (
     <Stack className="flex-1">
-      <Grid>
+      <Grid className="px-4">
         <GridCol span={1.5}>
           <Group gap={0}>
-            <div className="w-[48%]"></div>
+            <div className="w-[40%] flex-none"></div>
             <Text fw={500}>Item</Text>
           </Group>
         </GridCol>
@@ -110,30 +134,31 @@ function SummarySection({ cartItems }: CartProps) {
   });
 
   const subtotal =
-    cartItems && cartItems.reduce((acc, val) => acc + val.product.price, 0);
+    cartItems &&
+    cartItems.reduce((acc, val) => acc + val.product.price * val.quantity, 0);
   const shipping = 10.0;
   const taxes = 10.0;
   const total = subtotal && subtotal + shipping + taxes;
 
   return (
-    <Stack className="w-96 min-h-48 bg-neutral-900 rounded-md p-5">
-      <Title order={4} c="white">
+    <Stack className="w-96 min-h-48 bg-white rounded-lg shadow-sm p-5">
+      <Title order={4} c="">
         Summary
       </Title>
 
-      <Stack c="white" gap={8} className="flex-1 mb-2">
+      <Stack c="" gap={8} className="flex-1 mb-2">
         <Group align="end">
           <TextInput
             label="Enter Promo Code"
             placeholder="Code"
             className="flex-1"
           />
-          <Button variant="outline" color="white" c="white">
+          <Button variant="outline" color="" c="">
             Apply
           </Button>
         </Group>
 
-        <Divider my="sm" opacity={0.2} />
+        <Divider my="sm" opacity={0.8} />
 
         <Group justify="space-between">
           <Text>Subtotal</Text>
@@ -144,11 +169,11 @@ function SummarySection({ cartItems }: CartProps) {
           <Text>{curr.format(shipping)}</Text>
         </Group>
         <Group justify="space-between">
-          <Text>Taxes</Text>
+          <Text>VAT</Text>
           <Text>{curr.format(taxes)}</Text>
         </Group>
 
-        <Divider my="sm" opacity={0.2} />
+        <Divider my="sm" opacity={0.8} />
 
         <Group justify="space-between">
           <Text size="xl" fw={500}>
@@ -160,7 +185,7 @@ function SummarySection({ cartItems }: CartProps) {
         </Group>
       </Stack>
 
-      <Button color="white" c="black" leftSection={<IconShoppingBag />}>
+      <Button color="" c="" leftSection={<IconShoppingBag />}>
         Checkout
       </Button>
     </Stack>
