@@ -18,12 +18,7 @@ interface ProductCardProps {
 
 function ProductCard(props: ProductCardProps) {
   return (
-    <Card
-      style={{ overflow: "visible" }}
-      radius="md"
-      shadow="sm"
-      className="h-full"
-    >
+    <Card style={{ overflow: "visible" }} radius="md" shadow="sm">
       <Card.Section className="mb-4">
         <Stack pos="relative">
           <ImageHolder image={props.imageUrl} />

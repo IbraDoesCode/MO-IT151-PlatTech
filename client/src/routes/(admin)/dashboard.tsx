@@ -8,13 +8,18 @@ import {
   Grid,
   GridCol,
   Group,
+  Modal,
+  NumberInput,
   Pagination,
   Progress,
   ProgressSection,
   Stack,
+  Tabs,
   Text,
+  Textarea,
   TextInput,
   Title,
+  Tooltip,
 } from "@mantine/core";
 import { createFileRoute } from "@tanstack/react-router";
 import {
@@ -27,8 +32,22 @@ import {
   IconSortAscending,
 } from "@tabler/icons-react";
 import InventoryRow from "@/components/inventory-row";
-import { useProductsQuery } from "@/data/query/productQuery";
 import { useState } from "react";
+import {
+  useAddProductMutation,
+  useChangeProductStatusMutation,
+  useDashboardKPI,
+  useProductsQuery,
+} from "@/data/query/adminQuery";
+import { useDisclosure } from "@mantine/hooks";
+import ImageUpload from "@/components/image-upload";
+import { type FileWithPath } from "@mantine/dropzone";
+import { useForm } from "@mantine/form";
+import { zodResolver } from "mantine-form-zod-resolver";
+import {
+  productFormSchema,
+  type ProudctForm,
+} from "@/data/validation/productCreate";
 
 export const Route = createFileRoute("/(admin)/dashboard")({
   component: DashboardPage,
@@ -54,16 +73,14 @@ function DashboardPage() {
 }
 
 function KPISection() {
+  const { data } = useDashboardKPI();
+
   const curr = new Intl.NumberFormat("en-PH", {
     style: "currency",
     currency: "PHP",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   });
-
-  const totalProducts = 20;
-  const totalStock = 50;
-  const priceEstimate = 55600;
 
   return (
     <Group className="mb-4">
@@ -78,7 +95,7 @@ function KPISection() {
             Total Asset Value
           </Text>
           <Title order={1} c="white">
-            {curr.format(priceEstimate)}
+            {data && curr.format(data.data.totalAssetValue)}
           </Title>
         </Stack>
       </Card>
@@ -94,22 +111,46 @@ function KPISection() {
             <Avatar size={30}>
               <IconShirt color="black" size={20} />
             </Avatar>
-            <Title order={3}>{totalProducts}</Title>
+            <Title order={3}>{data && data.data.totalUniqueProducts}</Title>
             <Text c="dimmed" fw={500}>
               Products
             </Text>
           </Group>
 
           <Progress.Root>
-            <ProgressSection value={60} color="black" />
-            <ProgressSection value={20} color="gray" />
-            <ProgressSection value={20} color="#e9ecef" />
+            <ProgressPopover
+              value={data?.data.statusBreakdown.active || 0}
+              color="black"
+              label="Active"
+            />
+            <ProgressPopover
+              value={data?.data.statusBreakdown.inactive || 0}
+              color="gray"
+              label="Inactive"
+            />
+            <ProgressPopover
+              value={data?.data.statusBreakdown.discontinued || 0}
+              color="e9ecef"
+              label="Discontinued"
+            />
           </Progress.Root>
 
           <Group gap="lg">
-            <ChartLegend color="black" label="Active" />
-            <ChartLegend color="gray" label="Inactive" />
-            <ChartLegend color="#e9ecef" label="Discontinued" />
+            <ChartLegend
+              color="black"
+              label="Active"
+              value={data?.data.statusBreakdown.active || 0}
+            />
+            <ChartLegend
+              color="gray"
+              label="Inactive"
+              value={data?.data.statusBreakdown.inactive || 0}
+            />
+            <ChartLegend
+              color="#e9ecef"
+              label="Discontinued"
+              value={data?.data.statusBreakdown.discontinued || 0}
+            />
           </Group>
         </Stack>
       </Card>
@@ -125,22 +166,46 @@ function KPISection() {
             <Avatar size={30}>
               <IconPackage color="black" size={20} />
             </Avatar>
-            <Title order={3}>{totalStock}</Title>
+            <Title order={3}>{data && data.data.totalStock}</Title>
             <Text c="dimmed" fw={500}>
               Total Stock
             </Text>
           </Group>
 
           <Progress.Root>
-            <ProgressSection value={60} color="black" />
-            <ProgressSection value={20} color="gray" />
-            <ProgressSection value={20} color="#e9ecef" />
+            <ProgressPopover
+              value={data?.data.stockBreakdown.inStock || 0}
+              color="black"
+              label="In Stock"
+            />
+            <ProgressPopover
+              value={data?.data.stockBreakdown.lowStock || 0}
+              color="gray"
+              label="Low Stock"
+            />
+            <ProgressPopover
+              value={data?.data.stockBreakdown.noStock || 0}
+              color="e9ecef"
+              label="No Stock"
+            />
           </Progress.Root>
 
           <Group gap="lg">
-            <ChartLegend color="black" label="In Stock" />
-            <ChartLegend color="gray" label="Low Stock" />
-            <ChartLegend color="#e9ecef" label="Out of Stock" />
+            <ChartLegend
+              color="black"
+              label="In Stock"
+              value={data?.data.stockBreakdown.inStock || 0}
+            />
+            <ChartLegend
+              color="gray"
+              label="Low Stock"
+              value={data?.data.stockBreakdown.lowStock || 0}
+            />
+            <ChartLegend
+              color="#e9ecef"
+              label="Out of Stock"
+              value={data?.data.stockBreakdown.noStock || 0}
+            />
           </Group>
         </Stack>
       </Card>
@@ -151,20 +216,58 @@ function KPISection() {
 interface ChartLegendProps {
   color: string;
   label: string;
-  value?: string;
+  value?: number;
 }
 
 function ChartLegend(props: ChartLegendProps) {
   return (
     <Group gap={6}>
       <IconCircleFilled size={14} color={props.color} />
+      {props.value !== undefined && (
+        <Text size="sm" fw={500}>
+          {props.value}
+        </Text>
+      )}
       <Text size="sm">{props.label}</Text>
-      {props.value !== undefined && <Text size="sm">{props.value}</Text>}
     </Group>
   );
 }
 
+interface ProgressPopoverProps {
+  value: number;
+  color: string;
+  label: string;
+}
+
+function ProgressPopover(props: ProgressPopoverProps) {
+  // const [opened, { close, open }] = useDisclosure(false);
+
+  return (
+    // <Popover opened={opened} withArrow>
+    //   <PopoverTarget>
+
+    //   </PopoverTarget>
+    //   <PopoverDropdown>
+    //     <Group>
+    //       <Text>{props.value}</Text>
+    //     </Group>
+    //   </PopoverDropdown>
+    // </Popover>
+    <Tooltip label={props.value}>
+      <ProgressSection
+        value={props.value}
+        color={props.color}
+        className=""
+        // onMouseEnter={open}
+        // onMouseLeave={close}
+      />
+    </Tooltip>
+  );
+}
+
 function ActionBar() {
+  const [opened, { open, close }] = useDisclosure(false);
+
   return (
     <Group justify="space-between" className="mb-2">
       <Group>
@@ -180,8 +283,165 @@ function ActionBar() {
           <IconSortAscending color="gray" />
         </ActionIcon>
       </Group>
-      <Button leftSection={<IconPlus />}>New Item</Button>
+      <Button leftSection={<IconPlus />} onClick={open}>
+        New Item
+      </Button>
+      <Modal
+        opened={opened}
+        onClose={close}
+        withCloseButton={false}
+        title="Add New Product"
+        size="lg"
+      >
+        <AddItemModal onClose={close} />
+      </Modal>
     </Group>
+  );
+}
+
+interface AddItemModalProps {
+  onClose: () => void;
+}
+
+function AddItemModal(props: AddItemModalProps) {
+  const form = useForm({
+    mode: "uncontrolled",
+    initialValues: {
+      images: [] as FileWithPath[],
+      imageLink: undefined,
+      name: "",
+      category: "",
+      brand: null,
+      description: "",
+      price: 0,
+      quantity: 0,
+    },
+    validate: zodResolver(productFormSchema),
+  });
+
+  const { mutate } = useAddProductMutation();
+
+  const handleAddItem = (val: ProudctForm) => {
+    mutate(val);
+    props.onClose();
+  };
+
+  return (
+    <form onSubmit={form.onSubmit((val) => handleAddItem(val))}>
+      <Stack>
+        <Tabs defaultValue="image">
+          <Tabs.List>
+            <Tabs.Tab
+              value="image"
+              flex={1}
+              onClick={() => form.setFieldValue("imageLink", undefined)}
+            >
+              Upload Image
+            </Tabs.Tab>
+            <Tabs.Tab
+              value="link"
+              flex={1}
+              onClick={() => form.setFieldValue("images", [])}
+            >
+              Paste Link
+            </Tabs.Tab>
+          </Tabs.List>
+
+          <Tabs.Panel value="image">
+            <Stack pt="sm">
+              <ImageUpload
+                files={form.values.images}
+                onDrop={(file) =>
+                  form.setFieldValue("images", (prev) => [
+                    ...prev,
+                    ...file.slice(0, 4 - prev.length),
+                  ])
+                }
+                onRemoveFile={(val) =>
+                  form.setFieldValue("images", (prev) =>
+                    prev.filter((file) => val !== file)
+                  )
+                }
+              />
+            </Stack>
+          </Tabs.Panel>
+          <Tabs.Panel value="link">
+            <Stack pt="sm">
+              <TextInput
+                {...form.getInputProps("imageLink")}
+                key={form.key("imageLink")}
+                variant="filled"
+                label="Image Link"
+                placeholder="Paste the link of the image here..."
+              />
+            </Stack>
+          </Tabs.Panel>
+        </Tabs>
+
+        <TextInput
+          {...form.getInputProps("name")}
+          key={form.key("name")}
+          label="Name"
+          placeholder="Name of the product"
+          withAsterisk
+        />
+        <TextInput
+          {...form.getInputProps("category")}
+          key={form.key("category")}
+          label="Category"
+          placeholder="Category of the product"
+          withAsterisk
+        />
+        <TextInput
+          {...form.getInputProps("brand")}
+          key={form.key("brand")}
+          label="Brand"
+          placeholder="Specific brand if there are any"
+        />
+
+        <Group>
+          <NumberInput
+            {...form.getInputProps("price")}
+            key={form.key("price")}
+            label="Retail Price"
+            min={0}
+            allowNegative={false}
+            decimalScale={2}
+            prefix="₱"
+            hideControls
+            withAsterisk
+            flex={1}
+          />
+          <NumberInput
+            {...form.getInputProps("quantity")}
+            key={form.key("quantity")}
+            label="Stock Amount"
+            min={0}
+            allowNegative={false}
+            allowDecimal={false}
+            withAsterisk
+            flex={1}
+          />
+        </Group>
+
+        <Textarea
+          {...form.getInputProps("description")}
+          key={form.key("description")}
+          label="Description"
+          minRows={4}
+          autosize
+          placeholder="Add product description here..."
+          mb="xs"
+        />
+
+        <Group justify="end">
+          <Button variant="light" onClick={() => props.onClose()}>
+            Cancel
+          </Button>
+          <Button type="submit">Add</Button>
+        </Group>
+      </Stack>
+    </form>
   );
 }
 
@@ -191,9 +451,27 @@ function ProductTable() {
   const { data } = useProductsQuery({
     page: currentPage,
   });
+  const { mutate } = useChangeProductStatusMutation();
 
   const handlePageNavigate = (page: number) => {
     setCurrentPage(page);
+  };
+
+  const handleStatusToggle = (
+    id: string,
+    status: "active" | "inactive" | "discontinued"
+  ) => {
+    mutate({ id: id, status: status === "active" ? "inactive" : "active" });
+  };
+
+  const handleDiscontinueToggle = (
+    id: string,
+    status: "active" | "inactive" | "discontinued"
+  ) => {
+    mutate({
+      id: id,
+      status: status === "discontinued" ? "inactive" : "discontinued",
+    });
   };
 
   return (
@@ -278,7 +556,14 @@ function ProductTable() {
                 brand={typeof item.brand === "string" ? item.brand : undefined}
                 imageUrl={item.image_url}
                 price={item.price}
+                status={item.status}
                 stock={item.quantity}
+                onStatusToggleClick={() =>
+                  handleStatusToggle(item.id, item.status)
+                }
+                onDiscontinueClick={() =>
+                  handleDiscontinueToggle(item.id, item.status)
+                }
               />
               <Divider my={2} />
             </>

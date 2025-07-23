@@ -16,7 +16,7 @@ function ImageHolder(props: ImageHolderProps) {
     <AspectRatio
       ratio={1 / 1}
       mah={400}
-      className={`flex-none rounded-lg ${
+      className={`overflow-hidden flex-none rounded-lg ${
         props.darkBg ? "bg-[#f7f7f7]" : "bg-white"
       } `}
     >

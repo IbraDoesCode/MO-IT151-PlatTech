@@ -6,6 +6,7 @@ export interface Product {
   brand: string;
   price: number;
   rating: number;
+  status: "active" | "inactive" | "discontinued";
   quantity: number;
   image_url: string;
   images: string[];

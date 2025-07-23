@@ -137,6 +137,7 @@ function SearchBar() {
 
   return (
     <Autocomplete
+      radius="lg"
       className="w-3/5"
       placeholder="Find a product..."
       leftSection={<IconSearch />}

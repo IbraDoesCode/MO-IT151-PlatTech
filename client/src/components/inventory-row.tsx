@@ -1,6 +1,23 @@
-import { ActionIcon, Grid, GridCol, Group, Text } from "@mantine/core";
+import {
+  ActionIcon,
+  Chip,
+  Grid,
+  GridCol,
+  Group,
+  Menu,
+  Text,
+  Tooltip,
+} from "@mantine/core";
 import ImageHolder from "./image-holder";
-import { IconEdit, IconEye, IconTrash } from "@tabler/icons-react";
+import {
+  IconCircleFilled,
+  IconDotsVertical,
+  IconEdit,
+  IconEye,
+  IconEyeOff,
+  IconPackage,
+  IconTrash,
+} from "@tabler/icons-react";
 
 interface InventoryRowProps {
   id: string;
@@ -9,7 +26,12 @@ interface InventoryRowProps {
   category: string;
   brand: string | undefined;
   price: number;
+  status: "active" | "inactive" | "discontinued";
   stock: number;
+  onStatusToggleClick?: () => void;
+  onEditClick?: () => void;
+  onDiscontinueClick?: () => void;
+  onDeleteClick?: () => void;
 }
 
 function InventoryRow(props: InventoryRowProps) {
@@ -60,35 +82,97 @@ function InventoryRow(props: InventoryRowProps) {
         </GridCol>
 
         <GridCol span={1}>
-          <Group justify="center">
-            <Text size="md" fw={500}>
-              Status
-            </Text>
+          <Group h="100%" justify="center" align="center">
+            <Chip
+              variant="light"
+              icon={<IconCircleFilled size={14} />}
+              color={
+                props.status === "active"
+                  ? "green"
+                  : props.status === "inactive"
+                  ? "red"
+                  : "dark"
+              }
+              checked
+              readOnly
+            >
+              {props.status === "discontinued" ? "discont." : props.status}
+            </Chip>
           </Group>
         </GridCol>
 
         <GridCol span={2}>
-          <RowActions />
+          <RowActions
+            status={props.status}
+            onStatusToggleClick={props.onStatusToggleClick}
+            onEditClick={props.onEditClick}
+            onDiscontinueClick={props.onDiscontinueClick}
+            onDeleteClick={props.onDeleteClick}
+          />
         </GridCol>
       </Grid>
     </Group>
   );
 }
 
-function RowActions() {
+interface RowActionProps {
+  status: "active" | "inactive" | "discontinued";
+  onStatusToggleClick?: () => void;
+  onEditClick?: () => void;
+  onDiscontinueClick?: () => void;
+  onDeleteClick?: () => void;
+}
+
+function RowActions(props: RowActionProps) {
   return (
     <Group h="100%" align="center" justify="center" gap="sm">
-      <ActionIcon variant="subtle" size="md" radius="xl">
-        <IconEye />
-      </ActionIcon>
+      <Tooltip label="Status">
+        <ActionIcon
+          variant="subtle"
+          size="md"
+          radius="xl"
+          disabled={props.status === "discontinued"}
+          onClick={props.onStatusToggleClick}
+        >
+          {props.status === "active" ? <IconEye /> : <IconEyeOff />}
+        </ActionIcon>
+      </Tooltip>
 
-      <ActionIcon variant="subtle" size="md" radius="xl">
-        <IconEdit />
-      </ActionIcon>
+      <Tooltip label="Edit">
+        <ActionIcon
+          variant="subtle"
+          size="md"
+          radius="xl"
+          onClick={props.onEditClick}
+        >
+          <IconEdit />
+        </ActionIcon>
+      </Tooltip>
 
-      <ActionIcon variant="subtle" size="md" radius="xl">
-        <IconTrash />
-      </ActionIcon>
+      <Menu>
+        <Menu.Target>
+          <Tooltip label="More">
+            <ActionIcon variant="subtle" size="md" radius="xl">
+              <IconDotsVertical />
+            </ActionIcon>
+          </Tooltip>
+        </Menu.Target>
+        <Menu.Dropdown>
+          <Menu.Item
+            leftSection={<IconPackage size={14} />}
+            onClick={props.onDiscontinueClick}
+          >
+            {props.status === "discontinued" ? "Relist" : "Discontinue"}
+          </Menu.Item>
+          <Menu.Item
+            color="red"
+            leftSection={<IconTrash size={14} />}
+            onClick={props.onDeleteClick}
+          >
+            Delete
+          </Menu.Item>
+        </Menu.Dropdown>
+      </Menu>
     </Group>
   );
 }

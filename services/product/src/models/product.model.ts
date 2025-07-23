@@ -11,6 +11,7 @@ export interface IProduct {
   price: number;
   rating: number;
   quantity: number;
+  status: "active" | "inactive" | "discontinued";
   image_url: string;
   images: string[];
 }
@@ -48,6 +49,12 @@ const productSchema = new Schema<IProduct>(
       default: 1,
       required: true,
       min: [0, "Quantity cannot be negative"],
+    },
+    status: {
+      type: String,
+      enum: ["active", "inactive", "discontinued"],
+      default: "active",
+      required: true,
     },
     image_url: {
       type: String,
