@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as userNavbarRouteImport } from './routes/(user)/_navbar'
 import { Route as adminDashboardRouteImport } from './routes/(admin)/dashboard'
 import { Route as userNavbarProductsIndexRouteImport } from './routes/(user)/_navbar/products/index'
+import { Route as userNavbarFavoritesIndexRouteImport } from './routes/(user)/_navbar/favorites/index'
 import { Route as userNavbarCartIndexRouteImport } from './routes/(user)/_navbar/cart/index'
 import { Route as userNavbarProductsProductIdRouteImport } from './routes/(user)/_navbar/products/$productId'
 
@@ -43,6 +44,12 @@ const userNavbarProductsIndexRoute = userNavbarProductsIndexRouteImport.update({
   path: '/products/',
   getParentRoute: () => userNavbarRoute,
 } as any)
+const userNavbarFavoritesIndexRoute =
+  userNavbarFavoritesIndexRouteImport.update({
+    id: '/favorites/',
+    path: '/favorites/',
+    getParentRoute: () => userNavbarRoute,
+  } as any)
 const userNavbarCartIndexRoute = userNavbarCartIndexRouteImport.update({
   id: '/cart/',
   path: '/cart/',
@@ -60,6 +67,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof adminDashboardRoute
   '/products/$productId': typeof userNavbarProductsProductIdRoute
   '/cart': typeof userNavbarCartIndexRoute
+  '/favorites': typeof userNavbarFavoritesIndexRoute
   '/products': typeof userNavbarProductsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -67,6 +75,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof adminDashboardRoute
   '/products/$productId': typeof userNavbarProductsProductIdRoute
   '/cart': typeof userNavbarCartIndexRoute
+  '/favorites': typeof userNavbarFavoritesIndexRoute
   '/products': typeof userNavbarProductsIndexRoute
 }
 export interface FileRoutesById {
@@ -77,13 +86,26 @@ export interface FileRoutesById {
   '/(user)/_navbar': typeof userNavbarRouteWithChildren
   '/(user)/_navbar/products/$productId': typeof userNavbarProductsProductIdRoute
   '/(user)/_navbar/cart/': typeof userNavbarCartIndexRoute
+  '/(user)/_navbar/favorites/': typeof userNavbarFavoritesIndexRoute
   '/(user)/_navbar/products/': typeof userNavbarProductsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard' | '/products/$productId' | '/cart' | '/products'
+  fullPaths:
+    | '/'
+    | '/dashboard'
+    | '/products/$productId'
+    | '/cart'
+    | '/favorites'
+    | '/products'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/products/$productId' | '/cart' | '/products'
+  to:
+    | '/'
+    | '/dashboard'
+    | '/products/$productId'
+    | '/cart'
+    | '/favorites'
+    | '/products'
   id:
     | '__root__'
     | '/'
@@ -92,6 +114,7 @@ export interface FileRouteTypes {
     | '/(user)/_navbar'
     | '/(user)/_navbar/products/$productId'
     | '/(user)/_navbar/cart/'
+    | '/(user)/_navbar/favorites/'
     | '/(user)/_navbar/products/'
   fileRoutesById: FileRoutesById
 }
@@ -138,6 +161,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof userNavbarProductsIndexRouteImport
       parentRoute: typeof userNavbarRoute
     }
+    '/(user)/_navbar/favorites/': {
+      id: '/(user)/_navbar/favorites/'
+      path: '/favorites'
+      fullPath: '/favorites'
+      preLoaderRoute: typeof userNavbarFavoritesIndexRouteImport
+      parentRoute: typeof userNavbarRoute
+    }
     '/(user)/_navbar/cart/': {
       id: '/(user)/_navbar/cart/'
       path: '/cart'
@@ -158,12 +188,14 @@ declare module '@tanstack/react-router' {
 interface userNavbarRouteChildren {
   userNavbarProductsProductIdRoute: typeof userNavbarProductsProductIdRoute
   userNavbarCartIndexRoute: typeof userNavbarCartIndexRoute
+  userNavbarFavoritesIndexRoute: typeof userNavbarFavoritesIndexRoute
   userNavbarProductsIndexRoute: typeof userNavbarProductsIndexRoute
 }
 
 const userNavbarRouteChildren: userNavbarRouteChildren = {
   userNavbarProductsProductIdRoute: userNavbarProductsProductIdRoute,
   userNavbarCartIndexRoute: userNavbarCartIndexRoute,
+  userNavbarFavoritesIndexRoute: userNavbarFavoritesIndexRoute,
   userNavbarProductsIndexRoute: userNavbarProductsIndexRoute,
 }
 

@@ -1,6 +1,6 @@
 import CartCard from "@/components/cart-card";
-import type { Product } from "@/data/api/products-mock";
-import { useProductsQuery } from "@/data/query/productQuery";
+import { useCartMutation, useCartQuery } from "@/data/query/cartQuery";
+import type { CartItem } from "@/types/cart";
 import {
   Button,
   Container,
@@ -8,6 +8,8 @@ import {
   Grid,
   GridCol,
   Group,
+  Image,
+  Loader,
   Stack,
   Text,
   TextInput,
@@ -15,43 +17,75 @@ import {
 } from "@mantine/core";
 import { IconShoppingBag } from "@tabler/icons-react";
 import { createFileRoute } from "@tanstack/react-router";
+import EmptyCart from "@/assets/empty-cart.png";
 
 export const Route = createFileRoute("/(user)/_navbar/cart/")({
   component: CartPage,
 });
 
 function CartPage() {
-  const { data } = useProductsQuery();
+  const { data, isPending } = useCartQuery(
+    localStorage.getItem("cartId") || ""
+  );
 
-  const itemList = [1, 2, 3, 4];
-
-  const cart = data && data?.filter((item) => itemList.includes(item.id));
+  const cart = data?.data.items;
 
   return (
-    <Container size="xl" className="pt-10">
-      <Group className="mb-8">
+    <Container size="xl" className="pt-10 w-full flex-1">
+      <Stack gap={0} className="mb-4">
         <Title order={2}>Shopping Cart</Title>
-      </Group>
-      <Group align="start" gap="xl">
-        <ItemsSection cartItems={cart} />
+        <Text opacity={0.6}>Review your items before checking out.</Text>
+      </Stack>
 
-        <SummarySection cartItems={cart} />
+      <Group align="start" gap="xl">
+        {!isPending ? (
+          cart && cart.length > 0 ? (
+            <>
+              <ItemsSection cartItems={cart} />
+
+              <SummarySection cartItems={cart} />
+            </>
+          ) : (
+            <Stack
+              align="center"
+              justify="center"
+              gap={2}
+              className="w-full flex-1"
+            >
+              <Image src={EmptyCart} w={250} className="grayscale" />
+              <Text size="xl" fw={500} c="#d6d6d6" className="select-none">
+                Your cart is empty
+              </Text>
+            </Stack>
+          )
+        ) : (
+          <Stack align="center" justify="center" className="w-full flex-1">
+            <Loader />
+          </Stack>
+        )}
       </Group>
     </Container>
   );
 }
 
 interface CartProps {
-  cartItems: Product[] | undefined;
+  cartItems: CartItem[] | undefined;
 }
 
 function ItemsSection({ cartItems }: CartProps) {
+  const cartId = localStorage.getItem("cartId") || "";
+  const { mutate: cartMutate } = useCartMutation(cartId);
+
+  const handleItemQuantity = (productId: string, val: number | string) => {
+    cartMutate({ productId: productId, quantity: Number(val) });
+  };
+
   return (
     <Stack className="flex-1">
-      <Grid>
+      <Grid className="px-4">
         <GridCol span={1.5}>
           <Group gap={0}>
-            <div className="w-[48%]"></div>
+            <div className="w-[40%] flex-none"></div>
             <Text fw={500}>Item</Text>
           </Group>
         </GridCol>
@@ -79,13 +113,14 @@ function ItemsSection({ cartItems }: CartProps) {
       {cartItems &&
         cartItems.map((item) => (
           <CartCard
-            key={item.id}
-            id={`${item.id}`}
-            name={item.title}
-            category={item.category}
-            imageUrl={item.image}
-            price={item.price}
-            quantity={1}
+            key={item.product.id}
+            id={`${item.product.id}`}
+            name={item.product.name}
+            category={item.product.category}
+            imageUrl={item.product.image_url}
+            price={item.product.price}
+            quantity={item.quantity}
+            onQuantityChange={(val) => handleItemQuantity(item.product.id, val)}
           />
         ))}
     </Stack>
@@ -99,30 +134,31 @@ function SummarySection({ cartItems }: CartProps) {
   });
 
   const subtotal =
-    cartItems && cartItems.reduce((acc, val) => acc + val.price, 0);
+    cartItems &&
+    cartItems.reduce((acc, val) => acc + val.product.price * val.quantity, 0);
   const shipping = 10.0;
   const taxes = 10.0;
   const total = subtotal && subtotal + shipping + taxes;
 
   return (
-    <Stack className="w-96 min-h-48 bg-neutral-900 rounded-md p-5">
-      <Title order={4} c="white">
+    <Stack className="w-96 min-h-48 bg-white rounded-lg shadow-sm p-5">
+      <Title order={4} c="">
         Summary
       </Title>
 
-      <Stack c="white" gap={8} className="flex-1 mb-2">
+      <Stack c="" gap={8} className="flex-1 mb-2">
         <Group align="end">
           <TextInput
             label="Enter Promo Code"
             placeholder="Code"
             className="flex-1"
           />
-          <Button variant="outline" color="white" c="white">
+          <Button variant="outline" color="" c="">
             Apply
           </Button>
         </Group>
 
-        <Divider my="sm" opacity={0.2} />
+        <Divider my="sm" opacity={0.8} />
 
         <Group justify="space-between">
           <Text>Subtotal</Text>
@@ -133,11 +169,11 @@ function SummarySection({ cartItems }: CartProps) {
           <Text>{curr.format(shipping)}</Text>
         </Group>
         <Group justify="space-between">
-          <Text>Taxes</Text>
+          <Text>VAT</Text>
           <Text>{curr.format(taxes)}</Text>
         </Group>
 
-        <Divider my="sm" opacity={0.2} />
+        <Divider my="sm" opacity={0.8} />
 
         <Group justify="space-between">
           <Text size="xl" fw={500}>
@@ -149,7 +185,7 @@ function SummarySection({ cartItems }: CartProps) {
         </Group>
       </Stack>
 
-      <Button color="white" c="black" leftSection={<IconShoppingBag />}>
+      <Button color="" c="" leftSection={<IconShoppingBag />}>
         Checkout
       </Button>
     </Stack>

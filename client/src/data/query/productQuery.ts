@@ -1,14 +1,31 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
-import { getCategories, getProduct, getProducts } from "../api/products-mock";
+import {
+  getCategories,
+  getPriceRange,
+  getProduct,
+  getProducts,
+  searchProducts,
+} from "../api/products";
+import type { ProductSearch } from "../validation/productSearch";
+import type { ApiError } from "@/types/errors";
 
-export const productsQueryOptions = () =>
+export const productsQueryOptions = (search: ProductSearch) =>
   queryOptions({
-    queryKey: ["products"],
-    queryFn: getProducts,
+    queryKey: ["products", search],
+    queryFn: () => getProducts(search),
+    retry: (failCount, error) => {
+      const err = error as ApiError;
+
+      if (err.status === 404) {
+        return false;
+      }
+
+      return failCount < 3;
+    },
   });
 
-export const useProductsQuery = () => {
-  const query = useQuery(productsQueryOptions());
+export const useProductsQuery = (search: ProductSearch) => {
+  const query = useQuery(productsQueryOptions(search));
 
   return query;
 };
@@ -25,6 +42,18 @@ export const useProductQuery = (productId: string) => {
   return query;
 };
 
+export const searchProductsQueryOptions = (search: string) =>
+  queryOptions({
+    queryKey: ["products-search", search],
+    queryFn: () => searchProducts(search),
+  });
+
+export const useSearchProductsQuery = (search: string) => {
+  const query = useQuery(searchProductsQueryOptions(search));
+
+  return query;
+};
+
 export const categoriesQueryOptions = () =>
   queryOptions({
     queryKey: ["categories"],
@@ -33,6 +62,22 @@ export const categoriesQueryOptions = () =>
 
 export const useCategoriesQuery = () => {
   const query = useQuery(categoriesQueryOptions());
+
+  return query;
+};
+
+export const priceRangeQueryOptions = (
+  search: Omit<ProductSearch, "minPrice" | "maxPrice" | "name" | "page">
+) =>
+  queryOptions({
+    queryKey: ["price-range", search],
+    queryFn: () => getPriceRange(search),
+  });
+
+export const usePriceRangeQuery = (
+  search: Omit<ProductSearch, "minPrice" | "maxPrice" | "name" | "page">
+) => {
+  const query = useQuery(priceRangeQueryOptions(search));
 
   return query;
 };

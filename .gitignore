@@ -40,3 +40,6 @@ next-env.d.ts
 
 # database
 **/mongodb-data
+
+# server uploads
+/services/product/uploads/*

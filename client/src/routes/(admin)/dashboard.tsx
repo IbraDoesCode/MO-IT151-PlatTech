@@ -8,15 +8,22 @@ import {
   Grid,
   GridCol,
   Group,
+  Modal,
+  NumberInput,
+  Pagination,
+  Progress,
+  ProgressSection,
   Stack,
+  Tabs,
   Text,
+  Textarea,
   TextInput,
   Title,
+  Tooltip,
 } from "@mantine/core";
 import { createFileRoute } from "@tanstack/react-router";
-import { DonutChart } from "@mantine/charts";
 import {
-  IconCurrencyPeso,
+  IconCircleFilled,
   IconFilter,
   IconPackage,
   IconPlus,
@@ -25,7 +32,22 @@ import {
   IconSortAscending,
 } from "@tabler/icons-react";
 import InventoryRow from "@/components/inventory-row";
-import { useProductsQuery } from "@/data/query/productQuery";
+import { useState } from "react";
+import {
+  useAddProductMutation,
+  useChangeProductStatusMutation,
+  useDashboardKPI,
+  useProductsQuery,
+} from "@/data/query/adminQuery";
+import { useDisclosure } from "@mantine/hooks";
+import ImageUpload from "@/components/image-upload";
+import { type FileWithPath } from "@mantine/dropzone";
+import { useForm } from "@mantine/form";
+import { zodResolver } from "mantine-form-zod-resolver";
+import {
+  productFormSchema,
+  type ProudctForm,
+} from "@/data/validation/productCreate";
 
 export const Route = createFileRoute("/(admin)/dashboard")({
   component: DashboardPage,
@@ -33,28 +55,25 @@ export const Route = createFileRoute("/(admin)/dashboard")({
 
 function DashboardPage() {
   return (
-    <Container size="lg" className="pt-10">
-      <Title order={2} mb="lg">
-        Product Inventory
-      </Title>
-      <Stack>
-        <KPISection />
+    <Stack mih="100vh" className="flex flex-col  bg-neutral-50">
+      <Container size="lg" className="w-full flex-1 pt-10">
+        <Title order={2} mb="lg">
+          Product Inventory
+        </Title>
+        <Stack>
+          <KPISection />
 
-        <ActionBar />
+          <ActionBar />
 
-        <ProductTable />
-      </Stack>
-    </Container>
+          <ProductTable />
+        </Stack>
+      </Container>
+    </Stack>
   );
 }
 
 function KPISection() {
-  const data = [
-    { name: "Electronics", value: 6, color: "black" },
-    { name: "Jewelery", value: 4, color: "black" },
-    { name: "Men's Clothing", value: 4, color: "black" },
-    { name: "Women's Clothing", value: 6, color: "black" },
-  ];
+  const { data } = useDashboardKPI();
 
   const curr = new Intl.NumberFormat("en-PH", {
     style: "currency",
@@ -63,75 +82,192 @@ function KPISection() {
     maximumFractionDigits: 0,
   });
 
-  const totalProducts = 20;
-  const totalStock = 50;
-  const priceEstimate = 55600;
-
   return (
     <Group className="mb-4">
-      <Card withBorder style={{ overflow: "visible" }} className="h-34 flex-1">
-        <Group justify="space-between" className="px-4">
-          <Avatar size="lg">
-            <IconShirt color="black" size={34} />
-          </Avatar>
-
-          <Stack align="end">
-            <Text size="lg" c="dimmed">
-              Total Products
-            </Text>
-            <Title order={2}>{totalProducts}</Title>
-          </Stack>
-        </Group>
+      <Card
+        style={{ overflow: "visible" }}
+        bg="black"
+        radius="lg"
+        className="h-34 w-3/12"
+      >
+        <Stack align="start" justify="center" gap={2} className="px-2 h-full">
+          <Text size="md" c="#dedede">
+            Total Asset Value
+          </Text>
+          <Title order={1} c="white">
+            {data && curr.format(data.data.totalAssetValue)}
+          </Title>
+        </Stack>
       </Card>
 
-      <Card withBorder style={{ overflow: "visible" }} className="h-34 flex-1">
-        <Group justify="space-between" className="px-4">
-          <Avatar size="lg">
-            <IconPackage color="black" size={34} />
-          </Avatar>
+      <Card
+        withBorder
+        style={{ overflow: "visible" }}
+        radius="md"
+        className="h-34 flex-1"
+      >
+        <Stack>
+          <Group gap="sm">
+            <Avatar size={30}>
+              <IconShirt color="black" size={20} />
+            </Avatar>
+            <Title order={3}>{data && data.data.totalUniqueProducts}</Title>
+            <Text c="dimmed" fw={500}>
+              Products
+            </Text>
+          </Group>
 
-          <Stack align="end">
-            <Text size="lg" c="dimmed">
+          <Progress.Root>
+            <ProgressPopover
+              value={data?.data.statusBreakdown.active || 0}
+              color="black"
+              label="Active"
+            />
+            <ProgressPopover
+              value={data?.data.statusBreakdown.inactive || 0}
+              color="gray"
+              label="Inactive"
+            />
+            <ProgressPopover
+              value={data?.data.statusBreakdown.discontinued || 0}
+              color="e9ecef"
+              label="Discontinued"
+            />
+          </Progress.Root>
+
+          <Group gap="lg">
+            <ChartLegend
+              color="black"
+              label="Active"
+              value={data?.data.statusBreakdown.active || 0}
+            />
+            <ChartLegend
+              color="gray"
+              label="Inactive"
+              value={data?.data.statusBreakdown.inactive || 0}
+            />
+            <ChartLegend
+              color="#e9ecef"
+              label="Discontinued"
+              value={data?.data.statusBreakdown.discontinued || 0}
+            />
+          </Group>
+        </Stack>
+      </Card>
+
+      <Card
+        withBorder
+        style={{ overflow: "visible" }}
+        radius="md"
+        className="h-34 flex-1"
+      >
+        <Stack>
+          <Group gap="sm">
+            <Avatar size={30}>
+              <IconPackage color="black" size={20} />
+            </Avatar>
+            <Title order={3}>{data && data.data.totalStock}</Title>
+            <Text c="dimmed" fw={500}>
               Total Stock
             </Text>
-            <Title order={2}>{totalStock}</Title>
-          </Stack>
-        </Group>
-      </Card>
+          </Group>
 
-      <Card withBorder style={{ overflow: "visible" }} className="h-34 flex-1">
-        <Group justify="space-between" className="px-4">
-          <Avatar size="lg">
-            <IconCurrencyPeso color="black" size={34} />
-          </Avatar>
+          <Progress.Root>
+            <ProgressPopover
+              value={data?.data.stockBreakdown.inStock || 0}
+              color="black"
+              label="In Stock"
+            />
+            <ProgressPopover
+              value={data?.data.stockBreakdown.lowStock || 0}
+              color="gray"
+              label="Low Stock"
+            />
+            <ProgressPopover
+              value={data?.data.stockBreakdown.noStock || 0}
+              color="e9ecef"
+              label="No Stock"
+            />
+          </Progress.Root>
 
-          <Stack align="end">
-            <Text size="lg" c="dimmed">
-              Price Estimate
-            </Text>
-            <Title order={2}>{curr.format(priceEstimate)}</Title>
-          </Stack>
-        </Group>
-      </Card>
-
-      <Card withBorder style={{ overflow: "visible" }} className="h-34 flex-1">
-        <Group justify="space-between" align="start" className="px-2 h-full">
-          <Stack h="100%" justify="center">
-            <DonutChart size={80} thickness={14} data={data} />
-          </Stack>
-
-          <Stack align="end">
-            <Text size="lg" c="dimmed">
-              Categories
-            </Text>
-          </Stack>
-        </Group>
+          <Group gap="lg">
+            <ChartLegend
+              color="black"
+              label="In Stock"
+              value={data?.data.stockBreakdown.inStock || 0}
+            />
+            <ChartLegend
+              color="gray"
+              label="Low Stock"
+              value={data?.data.stockBreakdown.lowStock || 0}
+            />
+            <ChartLegend
+              color="#e9ecef"
+              label="Out of Stock"
+              value={data?.data.stockBreakdown.noStock || 0}
+            />
+          </Group>
+        </Stack>
       </Card>
     </Group>
   );
 }
 
+interface ChartLegendProps {
+  color: string;
+  label: string;
+  value?: number;
+}
+
+function ChartLegend(props: ChartLegendProps) {
+  return (
+    <Group gap={6}>
+      <IconCircleFilled size={14} color={props.color} />
+      {props.value !== undefined && (
+        <Text size="sm" fw={500}>
+          {props.value}
+        </Text>
+      )}
+      <Text size="sm">{props.label}</Text>
+    </Group>
+  );
+}
+
+interface ProgressPopoverProps {
+  value: number;
+  color: string;
+  label: string;
+}
+
+function ProgressPopover(props: ProgressPopoverProps) {
+  // const [opened, { close, open }] = useDisclosure(false);
+
+  return (
+    // <Popover opened={opened} withArrow>
+    //   <PopoverTarget>
+
+    //   </PopoverTarget>
+    //   <PopoverDropdown>
+    //     <Group>
+    //       <Text>{props.value}</Text>
+    //     </Group>
+    //   </PopoverDropdown>
+    // </Popover>
+    <Tooltip label={props.value}>
+      <ProgressSection
+        value={props.value}
+        color={props.color}
+        className=""
+        // onMouseEnter={open}
+        // onMouseLeave={close}
+      />
+    </Tooltip>
+  );
+}
+
 function ActionBar() {
+  const [opened, { open, close }] = useDisclosure(false);
+
   return (
     <Group justify="space-between" className="mb-2">
       <Group>
@@ -147,38 +283,213 @@ function ActionBar() {
           <IconSortAscending color="gray" />
         </ActionIcon>
       </Group>
-      <Button leftSection={<IconPlus />}>New Item</Button>
+      <Button leftSection={<IconPlus />} onClick={open}>
+        New Item
+      </Button>
+      <Modal
+        opened={opened}
+        onClose={close}
+        withCloseButton={false}
+        title="Add New Product"
+        size="lg"
+      >
+        <AddItemModal onClose={close} />
+      </Modal>
     </Group>
   );
 }
 
+interface AddItemModalProps {
+  onClose: () => void;
+}
+
+function AddItemModal(props: AddItemModalProps) {
+  const form = useForm({
+    mode: "uncontrolled",
+    initialValues: {
+      images: [] as FileWithPath[],
+      imageLink: undefined,
+      name: "",
+      category: "",
+      brand: null,
+      description: "",
+      price: 0,
+      quantity: 0,
+    },
+    validate: zodResolver(productFormSchema),
+  });
+
+  const { mutate } = useAddProductMutation();
+
+  const handleAddItem = (val: ProudctForm) => {
+    mutate(val);
+    props.onClose();
+  };
+
+  return (
+    <form onSubmit={form.onSubmit((val) => handleAddItem(val))}>
+      <Stack>
+        <Tabs defaultValue="image">
+          <Tabs.List>
+            <Tabs.Tab
+              value="image"
+              flex={1}
+              onClick={() => form.setFieldValue("imageLink", undefined)}
+            >
+              Upload Image
+            </Tabs.Tab>
+            <Tabs.Tab
+              value="link"
+              flex={1}
+              onClick={() => form.setFieldValue("images", [])}
+            >
+              Paste Link
+            </Tabs.Tab>
+          </Tabs.List>
+
+          <Tabs.Panel value="image">
+            <Stack pt="sm">
+              <ImageUpload
+                files={form.values.images}
+                onDrop={(file) =>
+                  form.setFieldValue("images", (prev) => [
+                    ...prev,
+                    ...file.slice(0, 4 - prev.length),
+                  ])
+                }
+                onRemoveFile={(val) =>
+                  form.setFieldValue("images", (prev) =>
+                    prev.filter((file) => val !== file)
+                  )
+                }
+              />
+            </Stack>
+          </Tabs.Panel>
+          <Tabs.Panel value="link">
+            <Stack pt="sm">
+              <TextInput
+                {...form.getInputProps("imageLink")}
+                key={form.key("imageLink")}
+                variant="filled"
+                label="Image Link"
+                placeholder="Paste the link of the image here..."
+              />
+            </Stack>
+          </Tabs.Panel>
+        </Tabs>
+
+        <TextInput
+          {...form.getInputProps("name")}
+          key={form.key("name")}
+          label="Name"
+          placeholder="Name of the product"
+          withAsterisk
+        />
+        <TextInput
+          {...form.getInputProps("category")}
+          key={form.key("category")}
+          label="Category"
+          placeholder="Category of the product"
+          withAsterisk
+        />
+        <TextInput
+          {...form.getInputProps("brand")}
+          key={form.key("brand")}
+          label="Brand"
+          placeholder="Specific brand if there are any"
+        />
+
+        <Group>
+          <NumberInput
+            {...form.getInputProps("price")}
+            key={form.key("price")}
+            label="Retail Price"
+            min={0}
+            allowNegative={false}
+            decimalScale={2}
+            prefix="₱"
+            hideControls
+            withAsterisk
+            flex={1}
+          />
+          <NumberInput
+            {...form.getInputProps("quantity")}
+            key={form.key("quantity")}
+            label="Stock Amount"
+            min={0}
+            allowNegative={false}
+            allowDecimal={false}
+            withAsterisk
+            flex={1}
+          />
+        </Group>
+
+        <Textarea
+          {...form.getInputProps("description")}
+          key={form.key("description")}
+          label="Description"
+          minRows={4}
+          autosize
+          placeholder="Add product description here..."
+          mb="xs"
+        />
+
+        <Group justify="end">
+          <Button variant="light" onClick={() => props.onClose()}>
+            Cancel
+          </Button>
+          <Button type="submit">Add</Button>
+        </Group>
+      </Stack>
+    </form>
+  );
+}
+
 function ProductTable() {
-  const { data } = useProductsQuery();
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const { data } = useProductsQuery({
+    page: currentPage,
+  });
+  const { mutate } = useChangeProductStatusMutation();
+
+  const handlePageNavigate = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleStatusToggle = (
+    id: string,
+    status: "active" | "inactive" | "discontinued"
+  ) => {
+    mutate({ id: id, status: status === "active" ? "inactive" : "active" });
+  };
+
+  const handleDiscontinueToggle = (
+    id: string,
+    status: "active" | "inactive" | "discontinued"
+  ) => {
+    mutate({
+      id: id,
+      status: status === "discontinued" ? "inactive" : "discontinued",
+    });
+  };
 
   return (
     <Stack className="flex-1 pb-20">
       <Card withBorder>
-        <Grid className="px-8">
-          <GridCol span={1}>
-            <Group align="center">
+        <Grid className="px-5 flex-1" gutter={0}>
+          <GridCol span={1.5}>
+            <Group>
               <Text size="md" fw={500}>
                 Image
               </Text>
             </Group>
           </GridCol>
 
-          <GridCol span={3.5}>
+          <GridCol span={2.5}>
             <Group align="center">
               <Text size="md" fw={500}>
                 Name
-              </Text>
-            </Group>
-          </GridCol>
-
-          <GridCol span={3}>
-            <Group align="center">
-              <Text size="md" fw={500}>
-                Description
               </Text>
             </Group>
           </GridCol>
@@ -192,6 +503,14 @@ function ProductTable() {
           </GridCol>
 
           <GridCol span={1.5}>
+            <Group align="center">
+              <Text size="md" fw={500}>
+                Brand
+              </Text>
+            </Group>
+          </GridCol>
+
+          <GridCol span={1}>
             <Group justify="center">
               <Text size="md" fw={500}>
                 Price
@@ -199,10 +518,26 @@ function ProductTable() {
             </Group>
           </GridCol>
 
-          <GridCol span={1.5}>
+          <GridCol span={1}>
             <Group justify="center">
               <Text size="md" fw={500}>
                 Stock
+              </Text>
+            </Group>
+          </GridCol>
+
+          <GridCol span={1}>
+            <Group justify="center">
+              <Text size="md" fw={500}>
+                Status
+              </Text>
+            </Group>
+          </GridCol>
+
+          <GridCol span={2}>
+            <Group justify="center">
+              <Text size="md" fw={500}>
+                Actions
               </Text>
             </Group>
           </GridCol>
@@ -211,21 +546,37 @@ function ProductTable() {
         <Divider mt="sm" />
 
         {data &&
-          data.map((item) => (
+          data.data.products.map((item) => (
             <>
               <InventoryRow
                 key={item.id}
                 id={`${item.id}`}
-                name={item.title}
+                name={item.name}
                 category={item.category}
-                imageUrl={item.image}
+                brand={typeof item.brand === "string" ? item.brand : undefined}
+                imageUrl={item.image_url}
                 price={item.price}
-                description={item.description}
-                stock={200}
+                status={item.status}
+                stock={item.quantity}
+                onStatusToggleClick={() =>
+                  handleStatusToggle(item.id, item.status)
+                }
+                onDiscontinueClick={() =>
+                  handleDiscontinueToggle(item.id, item.status)
+                }
               />
               <Divider my={2} />
             </>
           ))}
+
+        <Group justify="end" className="mt-4 px-4">
+          <Pagination
+            total={data?.data.totalPages || currentPage}
+            value={currentPage}
+            disabled={data === undefined}
+            onChange={handlePageNavigate}
+          />
+        </Group>
       </Card>
     </Stack>
   );

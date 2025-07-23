@@ -1,0 +1,218 @@
+import ProductCard from "@/components/product-card";
+import {
+  useCategoriesQuery,
+  usePriceRangeQuery,
+  useProductsQuery,
+} from "@/data/query/productQuery";
+import { productSearchSchema } from "@/data/validation/productSearch";
+import {
+  Button,
+  Checkbox,
+  Container,
+  Group,
+  Pagination,
+  RangeSlider,
+  ScrollArea,
+  SimpleGrid,
+  Spoiler,
+  Stack,
+  Text,
+  Title,
+  type RangeSliderValue,
+} from "@mantine/core";
+import { IconFilter } from "@tabler/icons-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+
+export const Route = createFileRoute("/(user)/_navbar/products/")({
+  component: ProductsPage,
+  validateSearch: productSearchSchema,
+});
+
+function ProductsPage() {
+  return (
+    <Container size="xl" className="pt-10 w-full flex-1 flex">
+      <Group align="start" className="flex-1">
+        <ProductFiltering />
+        <ProductGallery />
+      </Group>
+    </Container>
+  );
+}
+
+function ProductFiltering() {
+  const { data: categories } = useCategoriesQuery();
+  const { data: priceRange } = usePriceRangeQuery();
+
+  const search = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
+
+  const selectedCategories = search.category ?? [];
+
+  const [priceRangeState, setPriceRangeState] = useState<[number, number]>([
+    0, 1000,
+  ]);
+
+  useEffect(() => {
+    if (priceRange)
+      setPriceRangeState([
+        Math.round(priceRange.data.minPrice),
+        Math.round(priceRange.data.maxPrice),
+      ]);
+  }, [priceRange]);
+
+  const handleCategoryClick = (categories: string[]) => {
+    navigate({
+      search: (_) => ({
+        ...search,
+        page: 1,
+        category: categories.length > 0 ? categories : undefined,
+      }),
+    });
+  };
+
+  const handlePriceRangeChange = (sliderVal: RangeSliderValue) => {
+    if (!priceRange) return;
+    const { minPrice, maxPrice } = priceRange?.data;
+
+    navigate({
+      search: (_) => ({
+        ...search,
+        page: 1,
+        minPrice:
+          sliderVal[0] == Math.round(minPrice) ? undefined : sliderVal[0],
+        maxPrice:
+          sliderVal[1] == Math.round(maxPrice) ? undefined : sliderVal[1],
+      }),
+    });
+  };
+
+  const handleClearFilters = () => {
+    navigate({
+      search: (_) => ({}),
+    });
+    if (priceRange)
+      setPriceRangeState([
+        Math.round(priceRange.data.minPrice),
+        Math.round(priceRange.data.maxPrice),
+      ]);
+  };
+
+  return (
+    <Stack w={280} className="relative">
+      <Stack w={250} className="fixed h-10/12">
+        <ScrollArea offsetScrollbars>
+          <Stack>
+            <Group gap={4}>
+              <IconFilter />
+              <Title order={4}>Filters</Title>
+            </Group>
+            <Stack px="sm">
+              <Stack>
+                <Text fw={500}>Category</Text>
+                <Spoiler
+                  maxHeight={250}
+                  showLabel="Show More"
+                  hideLabel="Show Less"
+                >
+                  <Checkbox.Group
+                    value={[...selectedCategories]}
+                    onChange={handleCategoryClick}
+                  >
+                    <Stack>
+                      {categories &&
+                        categories.data.map((category) => (
+                          <Group key={category.slug} gap="sm">
+                            <Checkbox
+                              value={category.name}
+                              label={category.name}
+                              className="capitalize"
+                            />
+                            <Text size="sm" c="dimmed">
+                              {category.productCount}
+                            </Text>
+                          </Group>
+                        ))}
+                    </Stack>
+                  </Checkbox.Group>
+                </Spoiler>
+              </Stack>
+
+              <Stack>
+                <Text fw={500}>Price</Text>
+                {priceRange && (
+                  <Stack>
+                    <RangeSlider
+                      min={Math.round(priceRange.data.minPrice)}
+                      max={Math.round(priceRange.data.maxPrice)}
+                      label={null}
+                      value={priceRangeState}
+                      onChange={setPriceRangeState}
+                      onChangeEnd={handlePriceRangeChange}
+                    />
+                    <Stack gap="sm">
+                      <Text c="dimmed">Price Range:</Text>
+                      <Text>
+                        ₱{priceRangeState[0]} — ₱{priceRangeState[1]}
+                      </Text>
+                    </Stack>
+                  </Stack>
+                )}
+              </Stack>
+
+              <Button onClick={handleClearFilters}>Clear All</Button>
+            </Stack>
+          </Stack>
+        </ScrollArea>
+      </Stack>
+    </Stack>
+  );
+}
+
+function ProductGallery() {
+  const search = Route.useSearch();
+  const { data, isPending, isError } = useProductsQuery(search);
+
+  const navigate = useNavigate({ from: Route.fullPath });
+
+  const handlePageNavigate = (page: number) => {
+    navigate({
+      search: (_) => ({
+        ...search,
+        page: page,
+      }),
+    });
+  };
+
+  return (
+    <Stack className="flex-1 h-full pb-16" align="center" gap="xl">
+      <SimpleGrid className="flex-1 w-full" cols={3} spacing="sm">
+        {!isPending &&
+          !isError &&
+          data.data.products.map((product) => (
+            <Link
+              key={product.id}
+              to="/products/$productId"
+              params={{ productId: `${product.id}` }}
+            >
+              <ProductCard
+                id={`${product.id}`}
+                imageUrl={product.image_url}
+                name={product.name}
+                category={product.category}
+                price={product.price}
+                stock={5}
+              />
+            </Link>
+          ))}
+      </SimpleGrid>
+
+      <Pagination
+        total={data?.data.totalPages || search.page}
+        value={search.page}
+        disabled={data === undefined}
+        onChange={handlePageNavigate}
+      />
+    </Stack>
+  );
+}
