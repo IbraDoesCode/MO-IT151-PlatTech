@@ -1,14 +1,13 @@
 import {
-  AspectRatio,
   Card,
   Grid,
   GridCol,
   Group,
-  Image,
   NumberInput,
   Stack,
   Text,
 } from "@mantine/core";
+import ImageHolder from "./image-holder";
 
 interface CartCardProps {
   id: string;
@@ -17,6 +16,7 @@ interface CartCardProps {
   category: string;
   price: number;
   quantity: number;
+  onQuantityChange: (val: number | string) => void;
 }
 
 function CartCard(props: CartCardProps) {
@@ -26,16 +26,24 @@ function CartCard(props: CartCardProps) {
   });
 
   return (
-    <Card withBorder radius="md">
+    <Card radius="md" shadow="sm">
       <Grid>
         <GridCol span={1.5}>
-          <AspectRatio ratio={1 / 1}>
-            <Image src={props.imageUrl} fit="contain" h={70} />
-          </AspectRatio>
+          <Stack align="center">
+            <ImageHolder image={props.imageUrl} width={70} darkBg />
+          </Stack>
+          {/* <AspectRatio ratio={1 / 1}>
+            <Image
+              src={props.imageUrl}
+              fit="contain"
+              h={70}
+              className="flex-none"
+            />
+          </AspectRatio> */}
         </GridCol>
 
         <GridCol span={4.5}>
-          <Stack gap={2}>
+          <Stack gap={2} h="100%" justify="center">
             <Text size="md" fw={500}>
               {props.name}
             </Text>
@@ -46,22 +54,26 @@ function CartCard(props: CartCardProps) {
         </GridCol>
 
         <GridCol span={2}>
-          <Group justify="center">{curr.format(props.price)}</Group>
+          <Group justify="center" h="100%" align="center">
+            {curr.format(props.price)}
+          </Group>
         </GridCol>
 
         <GridCol span={2}>
-          <Group justify="center">
+          <Group justify="center" h="100%" align="center">
             <NumberInput
               w={80}
               defaultValue={props.quantity}
               allowDecimal={false}
               allowNegative={false}
+              min={0}
+              onChange={props.onQuantityChange}
             />
           </Group>
         </GridCol>
 
         <GridCol span={2}>
-          <Group justify="center">
+          <Group justify="center" h="100%" align="center">
             {curr.format(props.quantity * props.price)}
           </Group>
         </GridCol>

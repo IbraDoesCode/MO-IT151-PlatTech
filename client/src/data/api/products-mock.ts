@@ -1,4 +1,4 @@
-export interface Product {
+export interface ProductMock {
   id: number;
   title: string;
   price: number;
@@ -10,7 +10,7 @@ export interface Product {
 export const getProducts = async () => {
   const res = await fetch("https://fakestoreapi.com/products");
 
-  const data: Product[] = await res.json();
+  const data: ProductMock[] = await res.json();
 
   return data;
 };
@@ -18,7 +18,7 @@ export const getProducts = async () => {
 export const getProduct = async (id: string) => {
   const res = await fetch(`https://fakestoreapi.com/products/${id}`);
 
-  const data: Product = await res.json();
+  const data: ProductMock = await res.json();
 
   return data;
 };
